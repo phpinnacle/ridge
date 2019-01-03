@@ -1,0 +1,46 @@
+{
+    "name": "phpinnacle/ridge",
+    "type": "library",
+    "description": "PHPinnacle async AMQP client",
+    "keywords": [
+        "phpinnacle", "async", "amqp"
+    ],
+    "homepage": "https://github.com/phpinnacle/ridge",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "PHPinnacle",
+            "email": "dev@phpinnacle.com",
+            "homepage": "https://phpinnacle.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^7.2",
+        "amphp/amp": "^2.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^6.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "PHPinnacle\\Ridge\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "PHPinnacle\\Ridge\\Tests\\": "tests"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0-dev"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
