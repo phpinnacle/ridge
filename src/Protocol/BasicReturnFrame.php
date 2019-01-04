@@ -1,34 +1,41 @@
 <?php
+/**
+ * This file is part of PHPinnacle/Ridge.
+ *
+ * (c) PHPinnacle Team <dev@phpinnacle.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace PHPinnacle\Ridge\Protocol;
 
 use PHPinnacle\Ridge\Constants;
 
-/**
- * AMQP 'basic.return' (class #60, method #50) frame.
- *
- * THIS CLASS IS GENERATED FROM amqp-rabbitmq-0.9.1.json. **DO NOT EDIT!**
- *
- * @author Jakub Kulhan <jakub.kulhan@gmail.com>
- */
 class BasicReturnFrame extends MethodFrame
 {
-
-    /** @var int */
+    /**
+     * @var int
+     */
     public $replyCode;
 
-    /** @var string */
+    /**
+     * @var string
+     */
     public $replyText = '';
 
-    /** @var string */
+    /**
+     * @var string
+     */
     public $exchange;
 
-    /** @var string */
+    /**
+     * @var string
+     */
     public $routingKey;
 
     public function __construct()
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_RETURN);
     }
-
 }

@@ -1,46 +1,61 @@
 <?php
+/**
+ * This file is part of PHPinnacle/Ridge.
+ *
+ * (c) PHPinnacle Team <dev@phpinnacle.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace PHPinnacle\Ridge\Protocol;
 
 use PHPinnacle\Ridge\Constants;
 
-/**
- * AMQP 'queue.declare' (class #50, method #10) frame.
- *
- * THIS CLASS IS GENERATED FROM amqp-rabbitmq-0.9.1.json. **DO NOT EDIT!**
- *
- * @author Jakub Kulhan <jakub.kulhan@gmail.com>
- */
 class QueueDeclareFrame extends MethodFrame
 {
-
-    /** @var int */
+    /**
+     * @var int
+     */
     public $reserved1 = 0;
 
-    /** @var string */
+    /**
+     * @var string
+     */
     public $queue = '';
 
-    /** @var boolean */
+    /**
+     * @var boolean
+     */
     public $passive = false;
 
-    /** @var boolean */
+    /**
+     * @var boolean
+     */
     public $durable = false;
 
-    /** @var boolean */
+    /**
+     * @var boolean
+     */
     public $exclusive = false;
 
-    /** @var boolean */
+    /**
+     * @var boolean
+     */
     public $autoDelete = false;
 
-    /** @var boolean */
+    /**
+     * @var boolean
+     */
     public $nowait = false;
 
-    /** @var array */
+    /**
+     * @var array
+     */
     public $arguments = [];
 
     public function __construct()
     {
         parent::__construct(Constants::CLASS_QUEUE, Constants::METHOD_QUEUE_DECLARE);
     }
-
 }

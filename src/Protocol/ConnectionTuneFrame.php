@@ -1,32 +1,38 @@
 <?php
+/**
+ * This file is part of PHPinnacle/Ridge.
+ *
+ * (c) PHPinnacle Team <dev@phpinnacle.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace PHPinnacle\Ridge\Protocol;
 
 use PHPinnacle\Ridge\Constants;
 
-/**
- * AMQP 'connection.tune' (class #10, method #30) frame.
- *
- * THIS CLASS IS GENERATED FROM amqp-rabbitmq-0.9.1.json. **DO NOT EDIT!**
- *
- * @author Jakub Kulhan <jakub.kulhan@gmail.com>
- */
 class ConnectionTuneFrame extends MethodFrame
 {
-
-    /** @var int */
+    /**
+     * @var int
+     */
     public $channelMax = 0;
 
-    /** @var int */
+    /**
+     * @var int
+     */
     public $frameMax = 0;
 
-    /** @var int */
+    /**
+     * @var int
+     */
     public $heartbeat = 0;
 
     public function __construct()
     {
         parent::__construct(Constants::CLASS_CONNECTION, Constants::METHOD_CONNECTION_TUNE);
+
         $this->channel = Constants::CONNECTION_CHANNEL;
     }
-
 }

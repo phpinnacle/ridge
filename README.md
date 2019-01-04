@@ -23,10 +23,36 @@ $ composer require phpinnacle/ridge
 ```php
 <?php
 
+use Amp\Loop;
+use PHPinnacle\Ridge\Channel;
+use PHPinnacle\Ridge\Client;
+use PHPinnacle\Ridge\Config;
+use PHPinnacle\Ridge\Message;
+
 require __DIR__ . '/vendor/autoload.php';
 
-Amp\Loop::run(function () {
+Loop::run(function () {
+    $config = Config::dsn('amqp://admin:admin123@172.23.0.3');
+    $client = new Client($config);
+
+    yield $client->connect();
+
+    /** @var Channel $channel */
+    $channel = yield $client->channel();
+
+    yield $channel->queueDeclare('queue_name');
+
+    for ($i = 0; $i < 10; $i++) {
+        yield $channel->publish("test_$i", '', 'queue_name');
+    }
+
+    yield $channel->consume(function (Message $message, Channel $channel) {
+        echo $message->content() . \PHP_EOL;
+
+        yield $channel->ack($message);
+    }, 'queue_name');
 });
+
 ```
 
 More examples can be found in [`examples`](examples) directory.
