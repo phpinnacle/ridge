@@ -23,7 +23,7 @@ namespace PHPinnacle\Ridge;
  *
  * All integers are read from and written to buffer in big-endian order.
  */
-class Buffer
+final class Buffer
 {
     /**
      * @var bool
@@ -38,71 +38,25 @@ class Buffer
     /**
      * @var string
      */
-    private $buffer;
+    private $data;
 
     /**
      * @var int
      */
-    private $length;
+    private $size;
 
     /**
      * @param string $buffer
      */
-    public function __construct(string $buffer = "")
+    public function __construct(string $buffer = '')
     {
-        $this->buffer = $buffer;
-        $this->length = \strlen($this->buffer);
+        $this->data = $buffer;
+        $this->size = \strlen($this->data);
 
-        self::$isLittleEndian = \unpack("S", "\x01\x00")[1] === 1;
-        self::$native64BitPack = PHP_INT_SIZE === 8;
-    }
-
-    /**
-     * Swaps 16-bit integer endianness.
-     *
-     * @param string $s
-     *
-     * @return string
-     */
-    public static function swapEndian16(string $s): string
-    {
-        return $s[1] . $s[0];
-    }
-
-    /**
-     * Swaps 32-bit integer endianness.
-     *
-     * @param string $s
-     *
-     * @return string
-     */
-    public static function swapEndian32(string $s): string
-    {
-        return $s[3] . $s[2] . $s[1] . $s[0];
-    }
-
-    /**
-     * Swaps 64-bit integer endianness.
-     *
-     * @param string $s
-     *
-     * @return string
-     */
-    public static function swapEndian64(string $s): string
-    {
-        return $s[7] . $s[6] . $s[5] . $s[4] . $s[3] . $s[2] . $s[1] . $s[0];
-    }
-
-    /**
-     * Swaps 64-bit integer endianness so integer can be read/written as two 32-bit integers.
-     *
-     * @param string $s
-     *
-     * @return string
-     */
-    public static function swapHalvedEndian64(string $s): string
-    {
-        return $s[3] . $s[2] . $s[1] . $s[0] . $s[7] . $s[6] . $s[5] . $s[4];
+        if (self::$native64BitPack === null) {
+            self::$native64BitPack = PHP_INT_SIZE === 8;
+            self::$isLittleEndian = \unpack("S", "\x01\x00")[1] === 1;
+        }
     }
 
     /**
@@ -110,9 +64,9 @@ class Buffer
      *
      * @return int
      */
-    public function getLength(): int
+    public function size(): int
     {
-        return $this->length;
+        return $this->size;
     }
 
     /**
@@ -120,9 +74,26 @@ class Buffer
      *
      * @return boolean
      */
-    public function isEmpty(): bool
+    public function empty(): bool
     {
-        return $this->length === 0;
+        return $this->size === 0;
+    }
+
+    /**
+     * @return bool
+     */
+    public function ready(): bool
+    {
+        return \ord($this->data[-1]) === Constants::FRAME_END;
+    }
+
+    /**
+     * @return void
+     */
+    public function clear(): void
+    {
+        $this->data = "";
+        $this->size = 0;
     }
 
     /**
@@ -135,12 +106,12 @@ class Buffer
      */
     public function read(int $n, int $offset = 0): string
     {
-        if ($this->length < $offset + $n) {
+        if ($this->size < $offset + $n) {
             throw new Exception\BufferUnderflow;
-        } elseif ($offset === 0 && $this->length === $offset + $n) {
-            return $this->buffer;
+        } elseif ($offset === 0 && $this->size === $offset + $n) {
+            return $this->data;
         } else {
-            return \substr($this->buffer, $offset, $n);
+            return \substr($this->data, $offset, $n);
         }
     }
 
@@ -153,20 +124,20 @@ class Buffer
      */
     public function consume(int $n): string
     {
-        if ($this->length < $n) {
+        if ($this->size < $n) {
             throw new Exception\BufferUnderflow;
-        } elseif ($this->length === $n) {
-            $buffer = $this->buffer;
+        } elseif ($this->size === $n) {
+            $buffer = $this->data;
 
-            $this->buffer = "";
-            $this->length = 0;
+            $this->data = "";
+            $this->size = 0;
 
             return $buffer;
         } else {
-            $buffer = \substr($this->buffer, 0, $n);
+            $buffer = \substr($this->data, 0, $n);
 
-            $this->buffer = \substr($this->buffer, $n);
-            $this->length -= $n;
+            $this->data = \substr($this->data, $n);
+            $this->size -= $n;
 
             return $buffer;
         }
@@ -181,16 +152,16 @@ class Buffer
      */
     public function discard(int $n): self
     {
-        if ($this->length < $n) {
+        if ($this->size < $n) {
             throw new Exception\BufferUnderflow;
-        } elseif ($this->length === $n) {
-            $this->buffer = "";
-            $this->length = 0;
+        } elseif ($this->size === $n) {
+            $this->data = "";
+            $this->size = 0;
 
             return $this;
         } else {
-            $this->buffer = \substr($this->buffer, $n);
-            $this->length -= $n;
+            $this->data = \substr($this->data, $n);
+            $this->size -= $n;
 
             return $this;
         }
@@ -205,12 +176,12 @@ class Buffer
      */
     public function slice(int $n): self
     {
-        if ($this->length < $n) {
+        if ($this->size < $n) {
             throw new Exception\BufferUnderflow;
-        } elseif ($this->length === $n) {
-            return new Buffer($this->buffer);
+        } elseif ($this->size === $n) {
+            return new self($this->data);
         } else {
-            return new Buffer(\substr($this->buffer, 0, $n));
+            return new self(\substr($this->data, 0, $n));
         }
     }
 
@@ -223,23 +194,23 @@ class Buffer
      */
     public function consumeSlice(int $n): self
     {
-        if ($this->length < $n) {
+        if ($this->size < $n) {
             throw new Exception\BufferUnderflow;
-        } elseif ($this->length === $n) {
-            $buffer = $this->buffer;
+        } elseif ($this->size === $n) {
+            $buffer = $this->data;
 
-            $this->buffer = "";
-            $this->length = 0;
+            $this->data = "";
+            $this->size = 0;
 
-            return new Buffer($buffer);
+            return new self($buffer);
 
         } else {
-            $buffer = \substr($this->buffer, 0, $n);
+            $buffer = \substr($this->data, 0, $n);
 
-            $this->buffer = \substr($this->buffer, $n);
-            $this->length -= $n;
+            $this->data = \substr($this->data, $n);
+            $this->size -= $n;
 
-            return new Buffer($buffer);
+            return new self($buffer);
         }
     }
 
@@ -253,11 +224,11 @@ class Buffer
     public function append($s): self
     {
         if ($s instanceof Buffer) {
-            $s = $s->buffer;
+            $s = $s->data;
         }
 
-        $this->buffer .= $s;
-        $this->length = \strlen($this->buffer);
+        $this->data .= $s;
+        $this->size = \strlen($this->data);
 
         return $this;
     }
@@ -297,7 +268,7 @@ class Buffer
      */
     public function consumeUint8(): int
     {
-        [, $ret] = \unpack("C", $this->buffer);
+        [, $ret] = \unpack("C", $this->data);
 
         $this->discard(1);
 
@@ -377,7 +348,7 @@ class Buffer
      */
     public function consumeUint16(): int
     {
-        [, $ret] = \unpack("n", $this->buffer);
+        [, $ret] = \unpack("n", $this->data);
 
         $this->discard(2);
 
@@ -463,7 +434,7 @@ class Buffer
      */
     public function consumeUint32(): int
     {
-        [, $ret] = unpack("N", $this->buffer);
+        [, $ret] = unpack("N", $this->data);
 
         $this->discard(4);
 
@@ -645,6 +616,56 @@ class Buffer
     }
 
     /**
+     * Reads and discards string from buffer.
+     *
+     * @return string
+     */
+    public function consumeString(): string
+    {
+        return $this->consume($this->consumeUint8());
+    }
+
+    /**
+     * Appends string to buffer.
+     *
+     * @param string $value
+     *
+     * @return self
+     */
+    public function appendString(string $value): self
+    {
+        return $this
+            ->appendUint8(\strlen($value))
+            ->append($value)
+        ;
+    }
+
+    /**
+     * Reads and discards text from buffer.
+     *
+     * @return string
+     */
+    public function consumeText(): string
+    {
+        return $this->consume($this->consumeUint32());
+    }
+
+    /**
+     * Appends text to buffer.
+     *
+     * @param string $value
+     *
+     * @return self
+     */
+    public function appendText(string $value): self
+    {
+        return $this
+            ->appendUint32(\strlen($value))
+            ->append($value)
+        ;
+    }
+
+    /**
      * Reads float from buffer.
      *
      * @param int $offset
@@ -771,23 +792,26 @@ class Buffer
     }
 
     /**
+     * @noinspection PhpDocMissingThrowsInspection
+     *
      * Consumes AMQP timestamp from buffer.
      *
      * @return \DateTimeInterface
      */
     public function consumeTimestamp(): \DateTimeInterface
     {
+        /** @noinspection PhpUnhandledExceptionInspection */
         $d = (new \DateTimeImmutable)->setTimestamp($this->consumeUint64());
 
         return $d;
     }
 
     /**
-     * @param \DateTime $value
+     * @param \DateTimeInterface $value
      *
      * @return self
      */
-    public function appendTimestamp(\DateTime $value): self
+    public function appendTimestamp(\DateTimeInterface $value): self
     {
         return $this->appendUint64($value->getTimestamp());
     }
@@ -802,7 +826,7 @@ class Buffer
         $buffer = $this->consumeSlice($this->consumeUint32());
         $data = [];
 
-        while (!$buffer->isEmpty()) {
+        while (!$buffer->empty()) {
             $data[$buffer->consume($buffer->consumeUint8())] = $buffer->consumeValue();
         }
 
@@ -818,7 +842,7 @@ class Buffer
      */
     public function appendTable(array $table): self
     {
-        $buffer = new Buffer;
+        $buffer = new self;
 
         foreach ($table as $k => $v) {
             $buffer->appendUint8(\strlen($k));
@@ -826,7 +850,7 @@ class Buffer
             $buffer->appendValue($v);
         }
 
-        $this->appendUint32($buffer->getLength());
+        $this->appendUint32($buffer->size());
 
         return $this->append($buffer);
     }
@@ -841,7 +865,7 @@ class Buffer
         $buffer = $this->consumeSlice($this->consumeUint32());
         $data = [];
 
-        while (!$buffer->isEmpty()) {
+        while (!$buffer->empty()) {
             $data[] = $buffer->consumeValue();
         }
 
@@ -857,13 +881,13 @@ class Buffer
      */
     public function appendArray(array $value): self
     {
-        $buffer = new Buffer;
+        $buffer = new self;
 
         foreach ($value as $v) {
             $buffer->appendValue($v);
         }
 
-        $this->appendUint32($buffer->getLength());
+        $this->appendUint32($buffer->size());
 
         return $this->append($buffer);
     }
@@ -882,9 +906,15 @@ class Buffer
     }
 
     /**
+     * @return string
+     */
+    public function __toString(): string
+    {
+        return $this->data;
+    }
+
+    /**
      * Consumes AMQP table/array field value.
-     *
-     * @param Buffer $buffer
      *
      * @return mixed
      * @throws Exception\ProtocolException
@@ -931,11 +961,7 @@ class Buffer
             case Constants::FIELD_NULL:
                 return null;
             default:
-                throw new Exception\ProtocolException(
-                    sprintf("Unhandled field type 0x%02x", $fieldType) .
-                    (ctype_print(chr($fieldType)) ? " ('" . chr($fieldType) . "')" : "") .
-                    "."
-                );
+                throw Exception\ProtocolException::unknownFieldType($fieldType);
         }
     }
 
@@ -948,8 +974,7 @@ class Buffer
     {
         if (\is_string($value)) {
             $this->appendUint8(Constants::FIELD_LONG_STRING);
-            $this->appendUint32(\strlen($value));
-            $this->append($value);
+            $this->appendText($value);
         } elseif (\is_int($value)) {
             $this->appendUint8(Constants::FIELD_LONG_INT);
             $this->appendInt32($value);
@@ -960,7 +985,7 @@ class Buffer
             $this->appendUint8(Constants::FIELD_DOUBLE);
             $this->appendDouble($value);
         } elseif (\is_array($value)) {
-            if (\array_keys($value) === \range(0, \count($value) - 1)) { // sequential array
+            if (\array_keys($value) === \range(0, \count($value) - 1)) {
                 $this->appendUint8(Constants::FIELD_ARRAY);
                 $this->appendArray($value);
             } else {
@@ -973,11 +998,55 @@ class Buffer
             $this->appendUint8(Constants::FIELD_TIMESTAMP);
             $this->appendTimestamp($value);
         } else {
-            throw new Exception\ProtocolException(
-                "Unhandled value type '" . \gettype($value) . "' " .
-                (\is_object($value) ? "(class " . \get_class($value) . ")" : "") .
-                "."
-            );
+            throw Exception\ProtocolException::unknownValueType($value);
         }
+    }
+
+    /**
+     * Swaps 16-bit integer endianness.
+     *
+     * @param string $s
+     *
+     * @return string
+     */
+    private static function swapEndian16(string $s): string
+    {
+        return $s[1] . $s[0];
+    }
+
+    /**
+     * Swaps 32-bit integer endianness.
+     *
+     * @param string $s
+     *
+     * @return string
+     */
+    private static function swapEndian32(string $s): string
+    {
+        return $s[3] . $s[2] . $s[1] . $s[0];
+    }
+
+    /**
+     * Swaps 64-bit integer endianness.
+     *
+     * @param string $s
+     *
+     * @return string
+     */
+    private static function swapEndian64(string $s): string
+    {
+        return $s[7] . $s[6] . $s[5] . $s[4] . $s[3] . $s[2] . $s[1] . $s[0];
+    }
+
+    /**
+     * Swaps 64-bit integer endianness so integer can be read/written as two 32-bit integers.
+     *
+     * @param string $s
+     *
+     * @return string
+     */
+    private static function swapHalvedEndian64(string $s): string
+    {
+        return $s[3] . $s[2] . $s[1] . $s[0] . $s[7] . $s[6] . $s[5] . $s[4];
     }
 }

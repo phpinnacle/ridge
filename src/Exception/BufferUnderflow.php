@@ -12,6 +12,6 @@ declare(strict_types = 1);
 
 namespace PHPinnacle\Ridge\Exception;
 
-class BufferUnderflow extends \RuntimeException
+final class BufferUnderflow extends RidgeException
 {
 }

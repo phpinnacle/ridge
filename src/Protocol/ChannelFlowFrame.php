@@ -1,25 +1,26 @@
 <?php
+/**
+ * This file is part of PHPinnacle/Ridge.
+ *
+ * (c) PHPinnacle Team <dev@phpinnacle.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace PHPinnacle\Ridge\Protocol;
 
 use PHPinnacle\Ridge\Constants;
 
-/**
- * AMQP 'channel.flow' (class #20, method #20) frame.
- *
- * THIS CLASS IS GENERATED FROM amqp-rabbitmq-0.9.1.json. **DO NOT EDIT!**
- *
- * @author Jakub Kulhan <jakub.kulhan@gmail.com>
- */
 class ChannelFlowFrame extends MethodFrame
 {
-
-    /** @var boolean */
+    /**
+     * @var boolean
+     */
     public $active;
 
     public function __construct()
     {
         parent::__construct(Constants::CLASS_CHANNEL, Constants::METHOD_CHANNEL_FLOW);
     }
-
 }

@@ -1,37 +1,46 @@
 <?php
+/**
+ * This file is part of PHPinnacle/Ridge.
+ *
+ * (c) PHPinnacle Team <dev@phpinnacle.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace PHPinnacle\Ridge\Protocol;
 
 use PHPinnacle\Ridge\Constants;
 
-/**
- * AMQP 'basic.publish' (class #60, method #40) frame.
- *
- * THIS CLASS IS GENERATED FROM amqp-rabbitmq-0.9.1.json. **DO NOT EDIT!**
- *
- * @author Jakub Kulhan <jakub.kulhan@gmail.com>
- */
 class BasicPublishFrame extends MethodFrame
 {
-
-    /** @var int */
+    /**
+     * @var int
+     */
     public $reserved1 = 0;
 
-    /** @var string */
+    /**
+     * @var string
+     */
     public $exchange = '';
 
-    /** @var string */
+    /**
+     * @var string
+     */
     public $routingKey = '';
 
-    /** @var boolean */
+    /**
+     * @var boolean
+     */
     public $mandatory = false;
 
-    /** @var boolean */
+    /**
+     * @var boolean
+     */
     public $immediate = false;
 
     public function __construct()
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_PUBLISH);
     }
-
 }

@@ -1,24 +1,17 @@
 <?php
+/**
+ * This file is part of PHPinnacle/Ridge.
+ *
+ * (c) PHPinnacle Team <dev@phpinnacle.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 namespace PHPinnacle\Ridge\Protocol;
 
 use PHPinnacle\Ridge\Constants;
 
-/**
- * Method AMQP frame.
- *
- * Frame's payload wire format:
- *
- *
- *         0          2           4
- *     ----+----------+-----------+--------------------
- *     ... | class-id | method-id | method-arguments...
- *     ----+----------+-----------+--------------------
- *            uint16     uint16
- *
- *
- * @author Jakub Kulhan <jakub.kulhan@gmail.com>
- */
 class MethodFrame extends AbstractFrame
 {
     /**

@@ -8,14 +8,10 @@
  * file that was distributed with this source code.
  */
 
-namespace PHPinnacle\Ridge\Protocol;
+declare(strict_types = 1);
 
-use PHPinnacle\Ridge\Constants;
+namespace PHPinnacle\Ridge\Exception;
 
-class TxCommitOkFrame extends MethodFrame
+abstract class RidgeException extends \RuntimeException
 {
-    public function __construct()
-    {
-        parent::__construct(Constants::CLASS_TX, Constants::METHOD_TX_COMMIT_OK);
-    }
 }

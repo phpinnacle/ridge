@@ -12,94 +12,136 @@ declare(strict_types = 1);
 
 namespace PHPinnacle\Ridge;
 
-/**
- * Convenience crate for transferring messages through app.
- *
- * @author Jakub Kulhan <jakub.kulhan@gmail.com>
- */
-class Message
+final class Message
 {
     /**
      * @var string
      */
-    public $consumerTag;
+    private $content;
+
+    /**
+     * @var string
+     */
+    private $exchange;
+
+    /**
+     * @var string
+     */
+    private $routingKey;
+
+    /**
+     * @var string
+     */
+    private $consumerTag;
 
     /**
      * @var int
      */
-    public $deliveryTag;
+    private $deliveryTag;
 
     /**
      * @var boolean
      */
-    public $redelivered;
-
-    /**
-     * @var string
-     */
-    public $exchange;
-
-    /**
-     * @var string
-     */
-    public $routingKey;
+    private $redelivered;
 
     /**
      * @var array
      */
-    public $headers;
+    private $headers;
 
     /**
-     * @var string
-     */
-    public $content;
-
-    /**
-     * @param string  $consumerTag
-     * @param string  $deliveryTag
-     * @param boolean $redelivered
      * @param string  $exchange
-     * @param string  $routingKey
-     * @param array   $headers
      * @param string  $content
+     * @param string  $routingKey
+     * @param string  $consumerTag
+     * @param int     $deliveryTag
+     * @param boolean $redelivered
+     * @param array   $headers
      */
-    public function __construct($consumerTag, $deliveryTag, $redelivered, $exchange, $routingKey, array $headers, $content)
-    {
+    public function __construct(
+        string $content,
+        string $exchange,
+        string $routingKey = null,
+        string $consumerTag = null,
+        int $deliveryTag = null,
+        bool $redelivered = false,
+        array $headers = []
+    ) {
+        $this->content     = $content;
+        $this->exchange    = $exchange;
+        $this->routingKey  = $routingKey;
         $this->consumerTag = $consumerTag;
         $this->deliveryTag = $deliveryTag;
         $this->redelivered = $redelivered;
-        $this->exchange    = $exchange;
-        $this->routingKey  = $routingKey;
         $this->headers     = $headers;
-        $this->content     = $content;
+    }
+
+    /**
+     * @return string
+     */
+    public function content(): string
+    {
+        return $this->content;
+    }
+
+    /**
+     * @return string
+     */
+    public function exchange(): string
+    {
+        return $this->exchange;
+    }
+
+    /**
+     * @return string
+     */
+    public function routingKey(): string
+    {
+        return $this->routingKey;
+    }
+
+    /**
+     * @return string
+     */
+    public function consumerTag(): string
+    {
+        return $this->consumerTag;
+    }
+
+    /**
+     * @return int
+     */
+    public function deliveryTag(): int
+    {
+        return $this->deliveryTag;
+    }
+
+    /**
+     * @return bool
+     */
+    public function redelivered(): bool
+    {
+        return $this->redelivered;
+    }
+
+    /**
+     * @return array
+     */
+    public function headers(): array
+    {
+        return $this->headers;
     }
 
     /**
      * Returns header or default value.
      *
      * @param string $name
-     * @param mixed $default
+     * @param mixed  $default
      *
      * @return mixed
      */
-    public function getHeader($name, $default = null)
+    public function header(string $name, $default = null)
     {
-        if (isset($this->headers[$name])) {
-            return $this->headers[$name];
-        } else {
-            return $default;
-        }
-    }
-
-    /**
-     * Returns TRUE if message has given header.
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
-    public function hasHeader($name): bool
-    {
-        return isset($this->headers[$name]);
+        return $this->headers[$name] ?? $default;
     }
 }

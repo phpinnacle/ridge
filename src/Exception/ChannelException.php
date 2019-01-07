@@ -12,6 +12,13 @@ declare(strict_types = 1);
 
 namespace PHPinnacle\Ridge\Exception;
 
-class ChannelException extends \RuntimeException
+final class ChannelException extends RidgeException
 {
+    /**
+     * @return self
+     */
+    public static function getInProgress(): self
+    {
+        return new self("Another 'basic.get' already in progress. You should use 'basic.consume' instead of multiple 'basic.get'.");
+    }
 }

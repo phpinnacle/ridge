@@ -58,27 +58,27 @@ final class Config
     /**
      * @var int
      */
-    private $timeout;
+    private $timeout = 1;
 
     /**
      * @var int
      */
-    private $heartbeat;
+    private $heartbeat = 60;
 
     /**
      * @var int
      */
-    private $qosSize;
+    private $qosSize = 0;
 
     /**
      * @var int
      */
-    private $qosCount;
+    private $qosCount = 0;
 
     /**
      * @var bool
      */
-    private $qosGlobal;
+    private $qosGlobal = false;
 
     /**
      * @param string $host
@@ -87,13 +87,13 @@ final class Config
      * @param string $user
      * @param string $pass
      */
-    public function __construct(string $host, int $port, string $vhost, string $user = null, string $pass = null)
+    public function __construct(string $host, int $port, string $vhost = null, string $user = null, string $pass = null)
     {
         $this->host  = $host;
         $this->port  = $port;
-        $this->vhost = $vhost;
-        $this->user  = $user;
-        $this->pass  = $pass;
+        $this->vhost = $vhost ?: self::DEFAULT_VHOST;
+        $this->user  = $user ?: self::DEFAULT_USER;
+        $this->pass  = $pass ?: self::DEFAULT_PASS;
     }
 
     /**
@@ -117,13 +117,21 @@ final class Config
             $parts['pass'] ?? self::DEFAULT_PASS
         );
 
-        $self->timeout   = \filter_var($options['timeout'], FILTER_VALIDATE_FLOAT);
-        $self->heartbeat = \filter_var($options['heartbeat'], FILTER_VALIDATE_FLOAT);
+        $self->timeout   = \filter_var($options['timeout'], FILTER_VALIDATE_INT);
+        $self->heartbeat = \filter_var($options['heartbeat'], FILTER_VALIDATE_INT);
         $self->qosSize   = \filter_var($options['qos_size'], FILTER_VALIDATE_INT);
         $self->qosCount  = \filter_var($options['qos_count'], FILTER_VALIDATE_INT);
         $self->qosGlobal = \filter_var($options['qos_global'], FILTER_VALIDATE_BOOLEAN);
 
         return $self;
+    }
+
+    /**
+     * @return string
+     */
+    public function uri(): string
+    {
+        return \sprintf('tcp://%s:%d', $this->host, $this->port);
     }
 
     /**
@@ -167,17 +175,17 @@ final class Config
     }
 
     /**
-     * @return float
+     * @return int
      */
-    public function timeout(): float
+    public function timeout(): int
     {
         return $this->timeout;
     }
 
     /**
-     * @return float
+     * @return int
      */
-    public function heartbeat(): float
+    public function heartbeat(): int
     {
         return $this->heartbeat;
     }
