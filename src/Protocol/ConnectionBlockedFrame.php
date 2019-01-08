@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class ConnectionBlockedFrame extends MethodFrame
@@ -18,10 +19,15 @@ class ConnectionBlockedFrame extends MethodFrame
      * @var string
      */
     public $reason = '';
-
-    public function __construct()
+    
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_CONNECTION, Constants::METHOD_CONNECTION_BLOCKED);
+
         $this->channel = Constants::CONNECTION_CHANNEL;
+        $this->reason = $buffer->consumeString();
     }
 }

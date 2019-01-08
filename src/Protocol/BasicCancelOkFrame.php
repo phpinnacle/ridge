@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class BasicCancelOkFrame extends MethodFrame
@@ -18,9 +19,14 @@ class BasicCancelOkFrame extends MethodFrame
      * @var string
      */
     public $consumerTag;
-
-    public function __construct()
+    
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_CANCEL_OK);
+
+        $this->consumerTag = $buffer->consumeString();
     }
 }

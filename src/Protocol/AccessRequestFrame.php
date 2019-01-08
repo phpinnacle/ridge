@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class AccessRequestFrame extends MethodFrame
@@ -17,35 +18,48 @@ class AccessRequestFrame extends MethodFrame
     /**
      * @var string
      */
-    public $realm = '/data';
+    public $realm;
 
     /**
      * @var boolean
      */
-    public $exclusive = false;
+    public $exclusive;
 
     /**
      * @var boolean
      */
-    public $passive = true;
+    public $passive;
 
     /**
      * @var boolean
      */
-    public $active = true;
+    public $active;
 
     /**
      * @var boolean
      */
-    public $write = true;
+    public $write;
 
     /**
      * @var boolean
      */
-    public $read = true;
+    public $read;
 
-    public function __construct()
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_ACCESS, Constants::METHOD_ACCESS_REQUEST);
+
+        $this->realm = $buffer->consumeString();
+
+        [
+            $this->exclusive,
+            $this->passive,
+            $this->active,
+            $this->write,
+            $this->read
+        ] = $buffer->consumeBits(5);
     }
 }

@@ -21,4 +21,14 @@ final class ChannelException extends RidgeException
     {
         return new self("Another 'basic.get' already in progress. You should use 'basic.consume' instead of multiple 'basic.get'.");
     }
+
+    /**
+     * @param int $remaining
+     *
+     * @return self
+     */
+    public static function bodyOverflow(int $remaining): self
+    {
+        return new self("Body overflow, received {$remaining} more bytes.");
+    }
 }

@@ -12,7 +12,7 @@ declare(strict_types = 1);
 
 namespace PHPinnacle\Ridge;
 
-class Constants
+final class Constants
 {
     const CONNECTION_CHANNEL = 0;
 

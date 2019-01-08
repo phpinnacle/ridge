@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class ChannelCloseFrame extends MethodFrame
@@ -33,9 +34,17 @@ class ChannelCloseFrame extends MethodFrame
      * @var int
      */
     public $closeMethodId;
-
-    public function __construct()
+    
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_CHANNEL, Constants::METHOD_CHANNEL_CLOSE);
+
+        $this->replyCode     = $buffer->consumeInt16();
+        $this->replyText     = $buffer->consumeString();
+        $this->closeClassId  = $buffer->consumeInt16();
+        $this->closeMethodId = $buffer->consumeInt16();
     }
 }

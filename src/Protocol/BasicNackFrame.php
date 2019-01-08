@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class BasicNackFrame extends MethodFrame
@@ -28,9 +29,16 @@ class BasicNackFrame extends MethodFrame
      * @var boolean
      */
     public $requeue = true;
-
-    public function __construct()
+    
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_NACK);
+
+        $this->deliveryTag = $buffer->consumeInt64();
+
+        [$this->multiple, $this->requeue] = $buffer->consumeBits(2);
     }
 }

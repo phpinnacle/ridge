@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class ExchangeDeclareFrame extends MethodFrame
@@ -17,7 +18,7 @@ class ExchangeDeclareFrame extends MethodFrame
     /**
      * @var int
      */
-    public $reserved1 = 0;
+    public $reserved1;
 
     /**
      * @var string
@@ -27,40 +28,51 @@ class ExchangeDeclareFrame extends MethodFrame
     /**
      * @var string
      */
-    public $exchangeType = 'direct';
+    public $exchangeType;
 
     /**
      * @var boolean
      */
-    public $passive = false;
+    public $passive;
 
     /**
      * @var boolean
      */
-    public $durable = false;
+    public $durable;
 
     /**
      * @var boolean
      */
-    public $autoDelete = false;
+    public $autoDelete;
 
     /**
      * @var boolean
      */
-    public $internal = false;
+    public $internal;
 
     /**
      * @var boolean
      */
-    public $nowait = false;
+    public $nowait;
 
     /**
      * @var array
      */
     public $arguments = [];
 
-    public function __construct()
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_EXCHANGE, Constants::METHOD_EXCHANGE_DECLARE);
+
+        $this->reserved1    = $buffer->consumeInt16();
+        $this->exchange     = $buffer->consumeString();
+        $this->exchangeType = $buffer->consumeString();
+
+        [$this->passive, $this->durable, $this->autoDelete, $this->internal, $this->nowait] = $buffer->consumeBits(5);
+
+        $this->arguments = $buffer->consumeTable();
     }
 }

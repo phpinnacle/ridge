@@ -13,71 +13,75 @@ namespace PHPinnacle\Ridge;
 class ProtocolReader
 {
     /**
+     * @var Buffer
+     */
+    private $buffer;
+
+    public function __construct()
+    {
+        $this->buffer = new Buffer;
+    }
+
+    /**
+     * @param string $chunk
+     *
+     * @return void
+     */
+    public function append(string $chunk): void
+    {
+        $this->buffer->append($chunk);
+    }
+
+    /**
      * Consumes AMQP frame from buffer.
      *
      * Returns NULL if there are not enough data to construct whole frame.
      *
-     * @param Buffer $buffer
-     *
      * @return Protocol\AbstractFrame
      */
-    public static function frame(Buffer $buffer): ?Protocol\AbstractFrame
+    public function frame(): ?Protocol\AbstractFrame
     {
-        // not enough data
-        if ($buffer->size() < 7) {
+        if ($this->buffer->size() < 7) {
             return null;
         }
 
-        $type    = $buffer->readUint8(0);
-        $channel = $buffer->readUint16(1);
-        $size    = $buffer->readUint32(3);
+        $type    = $this->buffer->readUint8(0);
+        $channel = $this->buffer->readUint16(1);
+        $size    = $this->buffer->readUint32(3);
 
-        $payloadOffset = 7; // type:uint8=>1 + channel:uint16=>2 + size:uint32=>4 ==> 7
-
-        // not enough data
-        if ($buffer->size() < $payloadOffset + $size + 1 /* frame end byte */) {
+        if ($this->buffer->size() < $size + 8) {
             return null;
         }
 
-        $buffer->consume(7);
+        $this->buffer->consume(7);
 
-        $payload  = $buffer->consume($size);
-        $frameEnd = $buffer->consumeUint8();
+        $payload  = $this->buffer->consume($size);
+        $frameEnd = $this->buffer->consumeUint8();
 
         if ($frameEnd !== Constants::FRAME_END) {
             throw Exception\ProtocolException::invalidFrameEnd($frameEnd);
         }
 
-        $frameBuffer = new Buffer($payload);
-
         switch ($type) {
-            case Constants::FRAME_METHOD:
-                $frame = self::consumeMethodFrame($frameBuffer);
-
-                break;
             case Constants::FRAME_HEADER:
-                $frame = self::consumeHeaderFrame($frameBuffer);
+                $frame = Protocol\ContentHeaderFrame::buffer(new Buffer($payload));
 
                 break;
             case Constants::FRAME_BODY:
                 $frame = new Protocol\ContentBodyFrame;
-                $frame->payload = $frameBuffer->consume($frameBuffer->size());
+                $frame->payload = $payload;
+
+                break;
+            case Constants::FRAME_METHOD:
+                $frame = $this->consumeMethodFrame(new Buffer($payload));
 
                 break;
             case Constants::FRAME_HEARTBEAT:
                 $frame = new Protocol\HeartbeatFrame;
 
-                if (!$frameBuffer->empty()) {
-                    throw Exception\ProtocolException::notEmptyHeartbeat();
-                }
-
                 break;
             default:
                 throw Exception\ProtocolException::unknownFrameType($type);
-        }
-
-        if (!$frameBuffer->empty()) {
-            throw new Exception\ProtocolException("Frame buffer not entirely consumed.");
         }
 
         /** @var Protocol\AbstractFrame $frame */
@@ -95,376 +99,269 @@ class ProtocolReader
      *
      * @return Protocol\MethodFrame
      */
-    private static function consumeMethodFrame(Buffer $buffer): Protocol\MethodFrame
+    private function consumeMethodFrame(Buffer $buffer): Protocol\MethodFrame
     {
         $classId  = $buffer->consumeUint16();
         $methodId = $buffer->consumeUint16();
 
-        if ($classId === Constants::CLASS_CONNECTION) {
-            if ($methodId === Constants::METHOD_CONNECTION_START) {
-                $frame = new Protocol\ConnectionStartFrame;
-                $frame->versionMajor = $buffer->consumeUint8();
-                $frame->versionMinor = $buffer->consumeUint8();
-                $frame->serverProperties = $buffer->consumeTable();
-                $frame->mechanisms = $buffer->consumeText();
-                $frame->locales = $buffer->consumeText();
-            } elseif ($methodId === Constants::METHOD_CONNECTION_START_OK) {
-                $frame = new Protocol\ConnectionStartOkFrame;
-                $frame->clientProperties = $buffer->consumeTable();
-                $frame->mechanism = $buffer->consumeString();
-                $frame->response = $buffer->consumeText();
-                $frame->locale = $buffer->consumeString();
-            } elseif ($methodId === Constants::METHOD_CONNECTION_SECURE) {
-                $frame = new Protocol\ConnectionSecureFrame;
-                $frame->challenge = $buffer->consumeText();
-            } elseif ($methodId === Constants::METHOD_CONNECTION_SECURE_OK) {
-                $frame = new Protocol\ConnectionSecureOkFrame;
-                $frame->response = $buffer->consumeText();
-            } elseif ($methodId === Constants::METHOD_CONNECTION_TUNE) {
-                $frame = new Protocol\ConnectionTuneFrame;
-                $frame->channelMax = $buffer->consumeInt16();
-                $frame->frameMax = $buffer->consumeInt32();
-                $frame->heartbeat = $buffer->consumeInt16();
-            } elseif ($methodId === Constants::METHOD_CONNECTION_TUNE_OK) {
-                $frame = new Protocol\ConnectionTuneOkFrame;
-                $frame->channelMax = $buffer->consumeInt16();
-                $frame->frameMax = $buffer->consumeInt32();
-                $frame->heartbeat = $buffer->consumeInt16();
-            } elseif ($methodId === Constants::METHOD_CONNECTION_OPEN) {
-                $frame = new Protocol\ConnectionOpenFrame;
-                $frame->virtualHost = $buffer->consumeString();
-                $frame->capabilities = $buffer->consumeString();
-                list($frame->insist) = $buffer->consumeBits(1);
-            } elseif ($methodId === Constants::METHOD_CONNECTION_OPEN_OK) {
-                $frame = new Protocol\ConnectionOpenOkFrame;
-                $frame->knownHosts = $buffer->consumeString();
-            } elseif ($methodId === Constants::METHOD_CONNECTION_CLOSE) {
-                $frame = new Protocol\ConnectionCloseFrame;
-                $frame->replyCode = $buffer->consumeInt16();
-                $frame->replyText = $buffer->consumeString();
-                $frame->closeClassId = $buffer->consumeInt16();
-                $frame->closeMethodId = $buffer->consumeInt16();
-            } elseif ($methodId === Constants::METHOD_CONNECTION_CLOSE_OK) {
-                $frame = new Protocol\ConnectionCloseOkFrame;
-            } elseif ($methodId === Constants::METHOD_CONNECTION_BLOCKED) {
-                $frame = new Protocol\ConnectionBlockedFrame;
-                $frame->reason = $buffer->consumeString();
-            } elseif ($methodId === Constants::METHOD_CONNECTION_UNBLOCKED) {
-                $frame = new Protocol\ConnectionUnblockedFrame;
-            } else {
-                throw new Exception\MethodInvalid($classId, $methodId);
-            }
-        } elseif ($classId === Constants::CLASS_CHANNEL) {
-            if ($methodId === Constants::METHOD_CHANNEL_OPEN) {
-                $frame = new Protocol\ChannelOpenFrame;
-                $frame->outOfBand = $buffer->consumeString();
-            } elseif ($methodId === Constants::METHOD_CHANNEL_OPEN_OK) {
-                $frame = new Protocol\ChannelOpenOkFrame;
-                $frame->channelId = $buffer->consumeText();
-            } elseif ($methodId === Constants::METHOD_CHANNEL_FLOW) {
-                $frame = new Protocol\ChannelFlowFrame;
-                list($frame->active) = $buffer->consumeBits(1);
-            } elseif ($methodId === Constants::METHOD_CHANNEL_FLOW_OK) {
-                $frame = new Protocol\ChannelFlowOkFrame;
-                list($frame->active) = $buffer->consumeBits(1);
-            } elseif ($methodId === Constants::METHOD_CHANNEL_CLOSE) {
-                $frame = new Protocol\ChannelCloseFrame;
-                $frame->replyCode = $buffer->consumeInt16();
-                $frame->replyText = $buffer->consumeString();
-                $frame->closeClassId = $buffer->consumeInt16();
-                $frame->closeMethodId = $buffer->consumeInt16();
-            } elseif ($methodId === Constants::METHOD_CHANNEL_CLOSE_OK) {
-                $frame = new Protocol\ChannelCloseOkFrame;
-            } else {
-                throw new Exception\MethodInvalid($classId, $methodId);
-            }
-        } elseif ($classId === Constants::CLASS_ACCESS) {
-            if ($methodId === Constants::METHOD_ACCESS_REQUEST) {
-                $frame = new Protocol\AccessRequestFrame;
-                $frame->realm = $buffer->consumeString();
-                list($frame->exclusive, $frame->passive, $frame->active, $frame->write, $frame->read) = $buffer->consumeBits(5);
-            } elseif ($methodId === Constants::METHOD_ACCESS_REQUEST_OK) {
-                $frame = new Protocol\AccessRequestOkFrame;
-                $frame->reserved1 = $buffer->consumeInt16();
-            } else {
-                throw new Exception\MethodInvalid($classId, $methodId);
-            }
-        } elseif ($classId === Constants::CLASS_EXCHANGE) {
-            if ($methodId === Constants::METHOD_EXCHANGE_DECLARE) {
-                $frame = new Protocol\ExchangeDeclareFrame;
-                $frame->reserved1 = $buffer->consumeInt16();
-                $frame->exchange = $buffer->consumeString();
-                $frame->exchangeType = $buffer->consumeString();
-                list($frame->passive, $frame->durable, $frame->autoDelete, $frame->internal, $frame->nowait) = $buffer->consumeBits(5);
-                $frame->arguments = $buffer->consumeTable();
-            } elseif ($methodId === Constants::METHOD_EXCHANGE_DECLARE_OK) {
-                $frame = new Protocol\ExchangeDeclareOkFrame;
-            } elseif ($methodId === Constants::METHOD_EXCHANGE_DELETE) {
-                $frame = new Protocol\ExchangeDeleteFrame;
-                $frame->reserved1 = $buffer->consumeInt16();
-                $frame->exchange = $buffer->consumeString();
-                list($frame->ifUnused, $frame->nowait) = $buffer->consumeBits(2);
-            } elseif ($methodId === Constants::METHOD_EXCHANGE_DELETE_OK) {
-                $frame = new Protocol\ExchangeDeleteOkFrame;
-            } elseif ($methodId === Constants::METHOD_EXCHANGE_BIND) {
-                $frame = new Protocol\ExchangeBindFrame;
-                $frame->reserved1 = $buffer->consumeInt16();
-                $frame->destination = $buffer->consumeString();
-                $frame->source = $buffer->consumeString();
-                $frame->routingKey = $buffer->consumeString();
-                list($frame->nowait) = $buffer->consumeBits(1);
-                $frame->arguments = $buffer->consumeTable();
-            } elseif ($methodId === Constants::METHOD_EXCHANGE_BIND_OK) {
-                $frame = new Protocol\ExchangeBindOkFrame;
-            } elseif ($methodId === Constants::METHOD_EXCHANGE_UNBIND) {
-                $frame = new Protocol\ExchangeUnbindFrame;
-                $frame->reserved1 = $buffer->consumeInt16();
-                $frame->destination = $buffer->consumeString();
-                $frame->source = $buffer->consumeString();
-                $frame->routingKey = $buffer->consumeString();
-                list($frame->nowait) = $buffer->consumeBits(1);
-                $frame->arguments = $buffer->consumeTable();
-            } elseif ($methodId === Constants::METHOD_EXCHANGE_UNBIND_OK) {
-                $frame = new Protocol\ExchangeUnbindOkFrame;
-            } else {
-                throw new Exception\MethodInvalid($classId, $methodId);
-            }
-        } elseif ($classId === Constants::CLASS_QUEUE) {
-            if ($methodId === Constants::METHOD_QUEUE_DECLARE) {
-                $frame = new Protocol\QueueDeclareFrame;
-                $frame->reserved1 = $buffer->consumeInt16();
-                $frame->queue = $buffer->consumeString();
-                list($frame->passive, $frame->durable, $frame->exclusive, $frame->autoDelete, $frame->nowait) = $buffer->consumeBits(5);
-                $frame->arguments = $buffer->consumeTable();
-            } elseif ($methodId === Constants::METHOD_QUEUE_DECLARE_OK) {
-                $frame = new Protocol\QueueDeclareOkFrame;
-                $frame->queue = $buffer->consumeString();
-                $frame->messageCount = $buffer->consumeInt32();
-                $frame->consumerCount = $buffer->consumeInt32();
-            } elseif ($methodId === Constants::METHOD_QUEUE_BIND) {
-                $frame = new Protocol\QueueBindFrame;
-                $frame->reserved1 = $buffer->consumeInt16();
-                $frame->queue = $buffer->consumeString();
-                $frame->exchange = $buffer->consumeString();
-                $frame->routingKey = $buffer->consumeString();
-                list($frame->nowait) = $buffer->consumeBits(1);
-                $frame->arguments = $buffer->consumeTable();
-            } elseif ($methodId === Constants::METHOD_QUEUE_BIND_OK) {
-                $frame = new Protocol\QueueBindOkFrame;
-            } elseif ($methodId === Constants::METHOD_QUEUE_PURGE) {
-                $frame = new Protocol\QueuePurgeFrame;
-                $frame->reserved1 = $buffer->consumeInt16();
-                $frame->queue = $buffer->consumeString();
-                list($frame->nowait) = $buffer->consumeBits(1);
-            } elseif ($methodId === Constants::METHOD_QUEUE_PURGE_OK) {
-                $frame = new Protocol\QueuePurgeOkFrame;
-                $frame->messageCount = $buffer->consumeInt32();
-            } elseif ($methodId === Constants::METHOD_QUEUE_DELETE) {
-                $frame = new Protocol\QueueDeleteFrame;
-                $frame->reserved1 = $buffer->consumeInt16();
-                $frame->queue = $buffer->consumeString();
-                list($frame->ifUnused, $frame->ifEmpty, $frame->nowait) = $buffer->consumeBits(3);
-            } elseif ($methodId === Constants::METHOD_QUEUE_DELETE_OK) {
-                $frame = new Protocol\QueueDeleteOkFrame;
-                $frame->messageCount = $buffer->consumeInt32();
-            } elseif ($methodId === Constants::METHOD_QUEUE_UNBIND) {
-                $frame = new Protocol\QueueUnbindFrame;
-                $frame->reserved1 = $buffer->consumeInt16();
-                $frame->queue = $buffer->consumeString();
-                $frame->exchange = $buffer->consumeString();
-                $frame->routingKey = $buffer->consumeString();
-                $frame->arguments = $buffer->consumeTable();
-            } elseif ($methodId === Constants::METHOD_QUEUE_UNBIND_OK) {
-                $frame = new Protocol\QueueUnbindOkFrame;
-            } else {
-                throw new Exception\MethodInvalid($classId, $methodId);
-            }
-        } elseif ($classId === Constants::CLASS_BASIC) {
-            if ($methodId === Constants::METHOD_BASIC_QOS) {
-                $frame = new Protocol\BasicQosFrame;
-                $frame->prefetchSize = $buffer->consumeInt32();
-                $frame->prefetchCount = $buffer->consumeInt16();
-                list($frame->global) = $buffer->consumeBits(1);
-            } elseif ($methodId === Constants::METHOD_BASIC_QOS_OK) {
-                $frame = new Protocol\BasicQosOkFrame;
-            } elseif ($methodId === Constants::METHOD_BASIC_CONSUME) {
-                $frame = new Protocol\BasicConsumeFrame;
-                $frame->reserved1 = $buffer->consumeInt16();
-                $frame->queue = $buffer->consumeString();
-                $frame->consumerTag = $buffer->consumeString();
-                list($frame->noLocal, $frame->noAck, $frame->exclusive, $frame->nowait) = $buffer->consumeBits(4);
-                $frame->arguments = $buffer->consumeTable();
-            } elseif ($methodId === Constants::METHOD_BASIC_CONSUME_OK) {
-                $frame = new Protocol\BasicConsumeOkFrame;
-                $frame->consumerTag = $buffer->consumeString();
-            } elseif ($methodId === Constants::METHOD_BASIC_CANCEL) {
-                $frame = new Protocol\BasicCancelFrame;
-                $frame->consumerTag = $buffer->consumeString();
-                list($frame->nowait) = $buffer->consumeBits(1);
-            } elseif ($methodId === Constants::METHOD_BASIC_CANCEL_OK) {
-                $frame = new Protocol\BasicCancelOkFrame;
-                $frame->consumerTag = $buffer->consumeString();
-            } elseif ($methodId === Constants::METHOD_BASIC_PUBLISH) {
-                $frame = new Protocol\BasicPublishFrame;
-                $frame->reserved1 = $buffer->consumeInt16();
-                $frame->exchange = $buffer->consumeString();
-                $frame->routingKey = $buffer->consumeString();
-                list($frame->mandatory, $frame->immediate) = $buffer->consumeBits(2);
-            } elseif ($methodId === Constants::METHOD_BASIC_RETURN) {
-                $frame = new Protocol\BasicReturnFrame;
-                $frame->replyCode = $buffer->consumeInt16();
-                $frame->replyText = $buffer->consumeString();
-                $frame->exchange = $buffer->consumeString();
-                $frame->routingKey = $buffer->consumeString();
-            } elseif ($methodId === Constants::METHOD_BASIC_DELIVER) {
-                $frame = new Protocol\BasicDeliverFrame;
-                $frame->consumerTag = $buffer->consumeString();
-                $frame->deliveryTag = $buffer->consumeInt64();
-                list($frame->redelivered) = $buffer->consumeBits(1);
-                $frame->exchange = $buffer->consumeString();
-                $frame->routingKey = $buffer->consumeString();
-            } elseif ($methodId === Constants::METHOD_BASIC_GET) {
-                $frame = new Protocol\BasicGetFrame;
-                $frame->reserved1 = $buffer->consumeInt16();
-                $frame->queue = $buffer->consumeString();
-                list($frame->noAck) = $buffer->consumeBits(1);
-            } elseif ($methodId === Constants::METHOD_BASIC_GET_OK) {
-                $frame = new Protocol\BasicGetOkFrame;
-                $frame->deliveryTag = $buffer->consumeInt64();
-                list($frame->redelivered) = $buffer->consumeBits(1);
-                $frame->exchange = $buffer->consumeString();
-                $frame->routingKey = $buffer->consumeString();
-                $frame->messageCount = $buffer->consumeInt32();
-            } elseif ($methodId === Constants::METHOD_BASIC_GET_EMPTY) {
-                $frame = new Protocol\BasicGetEmptyFrame;
-                $frame->clusterId = $buffer->consumeString();
-            } elseif ($methodId === Constants::METHOD_BASIC_ACK) {
-                $frame = new Protocol\BasicAckFrame;
-                $frame->deliveryTag = $buffer->consumeInt64();
-                list($frame->multiple) = $buffer->consumeBits(1);
-            } elseif ($methodId === Constants::METHOD_BASIC_REJECT) {
-                $frame = new Protocol\BasicRejectFrame;
-                $frame->deliveryTag = $buffer->consumeInt64();
-                list($frame->requeue) = $buffer->consumeBits(1);
-            } elseif ($methodId === Constants::METHOD_BASIC_RECOVER_ASYNC) {
-                $frame = new Protocol\BasicRecoverAsyncFrame;
-                list($frame->requeue) = $buffer->consumeBits(1);
-            } elseif ($methodId === Constants::METHOD_BASIC_RECOVER) {
-                $frame = new Protocol\BasicRecoverFrame;
-                list($frame->requeue) = $buffer->consumeBits(1);
-            } elseif ($methodId === Constants::METHOD_BASIC_RECOVER_OK) {
-                $frame = new Protocol\BasicRecoverOkFrame;
-            } elseif ($methodId === Constants::METHOD_BASIC_NACK) {
-                $frame = new Protocol\BasicNackFrame;
-                $frame->deliveryTag = $buffer->consumeInt64();
-                list($frame->multiple, $frame->requeue) = $buffer->consumeBits(2);
-            } else {
-                throw new Exception\MethodInvalid($classId, $methodId);
-            }
-        } elseif ($classId === Constants::CLASS_TX) {
-            if ($methodId === Constants::METHOD_TX_SELECT) {
-                $frame = new Protocol\TxSelectFrame;
-            } elseif ($methodId === Constants::METHOD_TX_SELECT_OK) {
-                $frame = new Protocol\TxSelectOkFrame;
-            } elseif ($methodId === Constants::METHOD_TX_COMMIT) {
-                $frame = new Protocol\TxCommitFrame;
-            } elseif ($methodId === Constants::METHOD_TX_COMMIT_OK) {
-                $frame = new Protocol\TxCommitOkFrame;
-            } elseif ($methodId === Constants::METHOD_TX_ROLLBACK) {
-                $frame = new Protocol\TxRollbackFrame;
-            } elseif ($methodId === Constants::METHOD_TX_ROLLBACK_OK) {
-                $frame = new Protocol\TxRollbackOkFrame;
-            } else {
-                throw new Exception\MethodInvalid($classId, $methodId);
-            }
-        } elseif ($classId === Constants::CLASS_CONFIRM) {
-            if ($methodId === Constants::METHOD_CONFIRM_SELECT) {
-                $frame = new Protocol\ConfirmSelectFrame;
-                list($frame->nowait) = $buffer->consumeBits(1);
-            } elseif ($methodId === Constants::METHOD_CONFIRM_SELECT_OK) {
-                $frame = new Protocol\ConfirmSelectOkFrame;
-            } else {
-                throw new Exception\MethodInvalid($classId, $methodId);
-            }
-        } else {
-            throw new Exception\ClassInvalid($classId);
+        switch ($classId) {
+            case Constants::CLASS_BASIC:
+                return $this->consumeBasicFrame($methodId, $buffer);
+            case Constants::CLASS_CONNECTION:
+                return $this->consumeConnectionFrame($methodId, $buffer);
+            case Constants::CLASS_CHANNEL:
+                return $this->consumeChannelFrame($methodId, $buffer);
+            case Constants::CLASS_EXCHANGE:
+                return $this->consumeExchangeFrame($methodId, $buffer);
+            case Constants::CLASS_QUEUE:
+                return $this->consumeQueueFrame($methodId, $buffer);
+            case Constants::CLASS_TX:
+                return $this->consumeTxFrame($methodId);
+            case Constants::CLASS_ACCESS:
+                return $this->consumeAccessFrame($methodId, $buffer);
+            case Constants::CLASS_CONFIRM:
+                return $this->consumeConfirmFrame($methodId, $buffer);
+            default:
+                throw new Exception\ClassInvalid($classId);
         }
-
-        $frame->classId  = $classId;
-        $frame->methodId = $methodId;
-
-        return $frame;
+    }
+    
+    /**
+     * @param int    $methodId
+     * @param Buffer $buffer
+     *
+     * @return Protocol\MethodFrame
+     */
+    private function consumeBasicFrame(int $methodId, Buffer $buffer): Protocol\MethodFrame
+    {
+        switch ($methodId) {
+            case Constants::METHOD_BASIC_DELIVER:
+                return new Protocol\BasicDeliverFrame($buffer);
+            case Constants::METHOD_BASIC_GET:
+                return new Protocol\BasicGetFrame($buffer);
+            case Constants::METHOD_BASIC_GET_OK:
+                return new Protocol\BasicGetOkFrame($buffer);
+            case Constants::METHOD_BASIC_QOS:
+                return new Protocol\BasicQosFrame($buffer);
+            case Constants::METHOD_BASIC_QOS_OK:
+                return new Protocol\BasicQosOkFrame;
+            case Constants::METHOD_BASIC_CONSUME:
+                return new Protocol\BasicConsumeFrame($buffer);
+            case Constants::METHOD_BASIC_CONSUME_OK:
+                return new Protocol\BasicConsumeOkFrame($buffer);
+            case Constants::METHOD_BASIC_CANCEL:
+                return new Protocol\BasicCancelFrame($buffer);
+            case Constants::METHOD_BASIC_CANCEL_OK:
+                return new Protocol\BasicCancelOkFrame($buffer);
+            case Constants::METHOD_BASIC_RECOVER:
+                return new Protocol\BasicRecoverFrame($buffer);
+            case Constants::METHOD_BASIC_RECOVER_OK:
+                return new Protocol\BasicRecoverOkFrame;
+            case Constants::METHOD_BASIC_RECOVER_ASYNC:
+                return new Protocol\BasicRecoverAsyncFrame($buffer);
+            case Constants::METHOD_BASIC_PUBLISH:
+                return new Protocol\BasicPublishFrame($buffer);
+            case Constants::METHOD_BASIC_RETURN:
+                return new Protocol\BasicReturnFrame($buffer);
+            case Constants::METHOD_BASIC_GET_EMPTY:
+                return new Protocol\BasicGetEmptyFrame($buffer);
+            case Constants::METHOD_BASIC_ACK:
+                return new Protocol\BasicAckFrame($buffer);
+            case Constants::METHOD_BASIC_NACK:
+                return new Protocol\BasicNackFrame($buffer);
+            case Constants::METHOD_BASIC_REJECT:
+                return new Protocol\BasicRejectFrame($buffer);
+            default:
+                throw new Exception\MethodInvalid(Constants::CLASS_BASIC, $methodId);
+        }
+    }
+    
+    /**
+     * @param int    $methodId
+     * @param Buffer $buffer
+     *
+     * @return Protocol\MethodFrame
+     */
+    private function consumeConnectionFrame(int $methodId, Buffer $buffer): Protocol\MethodFrame
+    {
+        switch ($methodId) {
+            case Constants::METHOD_CONNECTION_START:
+                return new Protocol\ConnectionStartFrame($buffer);
+            case Constants::METHOD_CONNECTION_START_OK:
+                return new Protocol\ConnectionStartOkFrame($buffer);
+            case Constants::METHOD_CONNECTION_SECURE:
+                return new Protocol\ConnectionSecureFrame($buffer);
+            case Constants::METHOD_CONNECTION_SECURE_OK:
+                return new Protocol\ConnectionSecureOkFrame($buffer);
+            case Constants::METHOD_CONNECTION_TUNE:
+                return new Protocol\ConnectionTuneFrame($buffer);
+            case Constants::METHOD_CONNECTION_TUNE_OK:
+                return new Protocol\ConnectionTuneOkFrame($buffer);
+            case Constants::METHOD_CONNECTION_OPEN:
+                return new Protocol\ConnectionOpenFrame($buffer);
+            case Constants::METHOD_CONNECTION_OPEN_OK:
+                return new Protocol\ConnectionOpenOkFrame($buffer);
+            case Constants::METHOD_CONNECTION_CLOSE:
+                return new Protocol\ConnectionCloseFrame($buffer);
+            case Constants::METHOD_CONNECTION_CLOSE_OK:
+                return new Protocol\ConnectionCloseOkFrame;
+            case Constants::METHOD_CONNECTION_BLOCKED:
+                return new Protocol\ConnectionBlockedFrame($buffer);
+            case Constants::METHOD_CONNECTION_UNBLOCKED:
+                return new Protocol\ConnectionUnblockedFrame;
+            default:
+                throw new Exception\MethodInvalid(Constants::CLASS_CONNECTION, $methodId);
+        }
+    }
+    
+    /**
+     * @param int    $methodId
+     * @param Buffer $buffer
+     *
+     * @return Protocol\MethodFrame
+     */
+    private function consumeChannelFrame(int $methodId, Buffer $buffer): Protocol\MethodFrame
+    {
+        switch ($methodId) {
+            case Constants::METHOD_CHANNEL_OPEN:
+                return new Protocol\ChannelOpenFrame($buffer);
+            case Constants::METHOD_CHANNEL_OPEN_OK:
+                return new Protocol\ChannelOpenOkFrame($buffer);
+            case Constants::METHOD_CHANNEL_FLOW:
+                return new Protocol\ChannelFlowFrame($buffer);
+            case Constants::METHOD_CHANNEL_FLOW_OK:
+                return new Protocol\ChannelFlowOkFrame($buffer);
+            case Constants::METHOD_CHANNEL_CLOSE:
+                return new Protocol\ChannelCloseFrame($buffer);
+            case Constants::METHOD_CHANNEL_CLOSE_OK:
+                return new Protocol\ChannelCloseOkFrame;
+            default:
+                throw new Exception\MethodInvalid(Constants::CLASS_CHANNEL, $methodId);
+        }
+    }
+    
+    /**
+     * @param int    $methodId
+     * @param Buffer $buffer
+     *
+     * @return Protocol\MethodFrame
+     */
+    private function consumeExchangeFrame(int $methodId, Buffer $buffer): Protocol\MethodFrame
+    {
+        switch ($methodId) {
+            case Constants::METHOD_EXCHANGE_DECLARE:
+                return new Protocol\ExchangeDeclareFrame($buffer);
+            case Constants::METHOD_EXCHANGE_DECLARE_OK:
+                return new Protocol\ExchangeDeclareOkFrame;
+            case Constants::METHOD_EXCHANGE_DELETE:
+                return new Protocol\ExchangeDeleteFrame($buffer);
+            case Constants::METHOD_EXCHANGE_DELETE_OK:
+                return new Protocol\ExchangeDeleteOkFrame;
+            case Constants::METHOD_EXCHANGE_BIND:
+                return new Protocol\ExchangeBindFrame($buffer);
+            case Constants::METHOD_EXCHANGE_BIND_OK:
+                return new Protocol\ExchangeBindOkFrame;
+            case Constants::METHOD_EXCHANGE_UNBIND:
+                return new Protocol\ExchangeUnbindFrame($buffer);
+            case Constants::METHOD_EXCHANGE_UNBIND_OK:
+                return new Protocol\ExchangeUnbindOkFrame;
+            default:
+                throw new Exception\MethodInvalid(Constants::CLASS_EXCHANGE, $methodId);
+        }
     }
 
     /**
+     * @param int    $methodId
      * @param Buffer $buffer
      *
-     * @return Protocol\ContentHeaderFrame
+     * @return Protocol\MethodFrame
      */
-    private static function consumeHeaderFrame(Buffer $buffer): Protocol\ContentHeaderFrame
+    private function consumeQueueFrame(int $methodId, Buffer $buffer): Protocol\MethodFrame
     {
-        $frame = new Protocol\ContentHeaderFrame;
-        $frame->classId  = $buffer->consumeUint16();
-        $frame->weight   = $buffer->consumeUint16();
-        $frame->bodySize = $buffer->consumeUint64();
-        $frame->flags    = $flags = $buffer->consumeUint16();
-
-        if ($flags & Protocol\ContentHeaderFrame::FLAG_CONTENT_TYPE) {
-            $frame->contentType = $buffer->consumeString();
+        switch ($methodId) {
+            case Constants::METHOD_QUEUE_DECLARE:
+                return new Protocol\QueueDeclareFrame($buffer);
+            case Constants::METHOD_QUEUE_DECLARE_OK:
+                return new Protocol\QueueDeclareOkFrame($buffer);
+            case Constants::METHOD_QUEUE_BIND:
+                return new Protocol\QueueBindFrame($buffer);
+            case Constants::METHOD_QUEUE_BIND_OK:
+                return new Protocol\QueueBindOkFrame;
+            case Constants::METHOD_QUEUE_UNBIND:
+                return new Protocol\QueueUnbindFrame($buffer);
+            case Constants::METHOD_QUEUE_UNBIND_OK:
+                return new Protocol\QueueUnbindOkFrame;
+            case Constants::METHOD_QUEUE_PURGE:
+                return new Protocol\QueuePurgeFrame($buffer);
+            case Constants::METHOD_QUEUE_PURGE_OK:
+                return new Protocol\QueuePurgeOkFrame($buffer);
+            case Constants::METHOD_QUEUE_DELETE:
+                return new Protocol\QueueDeleteFrame($buffer);
+            case Constants::METHOD_QUEUE_DELETE_OK:
+                return new Protocol\QueueDeleteOkFrame($buffer);
+            default:
+                throw new Exception\MethodInvalid(Constants::CLASS_QUEUE, $methodId);
         }
-
-        if ($flags & Protocol\ContentHeaderFrame::FLAG_CONTENT_ENCODING) {
-            $frame->contentEncoding = $buffer->consumeString();
+    }
+    
+    /**
+     * @param int    $methodId
+     * @param Buffer $buffer
+     *
+     * @return Protocol\MethodFrame
+     */
+    private function consumeAccessFrame(int $methodId, Buffer $buffer): Protocol\MethodFrame
+    {
+        switch ($methodId) {
+            case Constants::METHOD_ACCESS_REQUEST:
+                return new Protocol\AccessRequestFrame($buffer);
+            case Constants::METHOD_ACCESS_REQUEST_OK:
+                return new Protocol\AccessRequestOkFrame($buffer);
+            default:
+                throw new Exception\MethodInvalid(Constants::CLASS_ACCESS, $methodId);
         }
-
-        if ($flags & Protocol\ContentHeaderFrame::FLAG_HEADERS) {
-            $frame->headers = $buffer->consumeTable();
+    }
+    
+    /**
+     * @param int $methodId
+     *
+     * @return Protocol\MethodFrame
+     */
+    private function consumeTxFrame(int $methodId): Protocol\MethodFrame
+    {
+        switch ($methodId) {
+            case Constants::METHOD_TX_SELECT:
+                return new Protocol\TxSelectFrame;
+            case Constants::METHOD_TX_SELECT_OK:
+                return new Protocol\TxSelectOkFrame;
+            case Constants::METHOD_TX_COMMIT:
+                return new Protocol\TxCommitFrame;
+            case Constants::METHOD_TX_COMMIT_OK:
+                return new Protocol\TxCommitOkFrame;
+            case Constants::METHOD_TX_ROLLBACK:
+                return new Protocol\TxRollbackFrame;
+            case Constants::METHOD_TX_ROLLBACK_OK:
+                return new Protocol\TxRollbackOkFrame;
+            default:
+                throw new Exception\MethodInvalid(Constants::CLASS_TX, $methodId);
         }
-
-        if ($flags & Protocol\ContentHeaderFrame::FLAG_DELIVERY_MODE) {
-            $frame->deliveryMode = $buffer->consumeUint8();
+    }
+    
+    /**
+     * @param int    $methodId
+     * @param Buffer $buffer
+     *
+     * @return Protocol\MethodFrame
+     */
+    private function consumeConfirmFrame(int $methodId, Buffer $buffer): Protocol\MethodFrame
+    {
+        switch ($methodId) {
+            case Constants::METHOD_CONFIRM_SELECT:
+                return new Protocol\ConfirmSelectFrame($buffer);
+            case Constants::METHOD_CONFIRM_SELECT_OK:
+                return new Protocol\ConfirmSelectOkFrame;
+            default:
+                throw new Exception\MethodInvalid(Constants::CLASS_CONFIRM, $methodId);
         }
-
-        if ($flags & Protocol\ContentHeaderFrame::FLAG_PRIORITY) {
-            $frame->priority = $buffer->consumeUint8();
-        }
-
-        if ($flags & Protocol\ContentHeaderFrame::FLAG_CORRELATION_ID) {
-            $frame->correlationId = $buffer->consumeString();
-        }
-
-        if ($flags & Protocol\ContentHeaderFrame::FLAG_REPLY_TO) {
-            $frame->replyTo = $buffer->consumeString();
-        }
-
-        if ($flags & Protocol\ContentHeaderFrame::FLAG_EXPIRATION) {
-            $frame->expiration = $buffer->consumeString();
-        }
-
-        if ($flags & Protocol\ContentHeaderFrame::FLAG_MESSAGE_ID) {
-            $frame->messageId = $buffer->consumeString();
-        }
-
-        if ($flags & Protocol\ContentHeaderFrame::FLAG_TIMESTAMP) {
-            $frame->timestamp = $buffer->consumeTimestamp();
-        }
-
-        if ($flags & Protocol\ContentHeaderFrame::FLAG_TYPE) {
-            $frame->typeHeader = $buffer->consumeString();
-        }
-
-        if ($flags & Protocol\ContentHeaderFrame::FLAG_USER_ID) {
-            $frame->userId = $buffer->consumeString();
-        }
-
-        if ($flags & Protocol\ContentHeaderFrame::FLAG_APP_ID) {
-            $frame->appId = $buffer->consumeString();
-        }
-
-        if ($flags & Protocol\ContentHeaderFrame::FLAG_CLUSTER_ID) {
-            $frame->clusterId = $buffer->consumeString();
-        }
-
-        return $frame;
     }
 }

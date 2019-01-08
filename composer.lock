@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d0f01d3ead419c312e28b12a6008405d",
+    "content-hash": "f54332bace22103628bfa9c68e9fa358",
     "packages": [
         {
             "name": "amphp/amp",
@@ -333,16 +333,16 @@
         },
         {
             "name": "amphp/parallel",
-            "version": "v1.1.0",
+            "version": "v1.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/amphp/parallel.git",
-                "reference": "ccf285bdcc38f355a1a113175291e1bfe87205ad"
+                "reference": "687776dc6933af4c6009ac58f915faf45e8463ce"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/amphp/parallel/zipball/ccf285bdcc38f355a1a113175291e1bfe87205ad",
-                "reference": "ccf285bdcc38f355a1a113175291e1bfe87205ad",
+                "url": "https://api.github.com/repos/amphp/parallel/zipball/687776dc6933af4c6009ac58f915faf45e8463ce",
+                "reference": "687776dc6933af4c6009ac58f915faf45e8463ce",
                 "shasum": ""
             },
             "require": {
@@ -392,7 +392,7 @@
                 "multi-processing",
                 "multi-threading"
             ],
-            "time": "2018-12-30T19:32:25+00:00"
+            "time": "2019-01-09T21:31:46+00:00"
         },
         {
             "name": "amphp/parser",
@@ -750,6 +750,46 @@
         }
     ],
     "packages-dev": [
+        {
+            "name": "amphp/phpunit-util",
+            "version": "v1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/amphp/phpunit-util.git",
+                "reference": "1194636f5f1796d03e4e59c219cd3abfffe40eb8"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/amphp/phpunit-util/zipball/1194636f5f1796d03e4e59c219cd3abfffe40eb8",
+                "reference": "1194636f5f1796d03e4e59c219cd3abfffe40eb8",
+                "shasum": ""
+            },
+            "require": {
+                "phpunit/phpunit": "^6"
+            },
+            "require-dev": {
+                "amphp/amp": "^2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Amp\\PHPUnit\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Niklas Keller",
+                    "email": "me@kelunik.com"
+                }
+            ],
+            "description": "Helper package to ease testing with PHPUnit.",
+            "homepage": "http://amphp.org/phpunit-util",
+            "time": "2017-06-15T15:43:56+00:00"
+        },
         {
             "name": "doctrine/instantiator",
             "version": "1.1.0",

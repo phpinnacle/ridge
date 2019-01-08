@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class BasicRecoverAsyncFrame extends MethodFrame
@@ -18,9 +19,14 @@ class BasicRecoverAsyncFrame extends MethodFrame
      * @var boolean
      */
     public $requeue = false;
-
-    public function __construct()
+    
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_RECOVER_ASYNC);
+
+        [$this->requeue] = $buffer->consumeBits(1);
     }
 }

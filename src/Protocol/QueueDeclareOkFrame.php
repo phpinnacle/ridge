@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class QueueDeclareOkFrame extends MethodFrame
@@ -29,8 +30,15 @@ class QueueDeclareOkFrame extends MethodFrame
      */
     public $consumerCount;
 
-    public function __construct()
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_QUEUE, Constants::METHOD_QUEUE_DECLARE_OK);
+
+        $this->queue         = $buffer->consumeString();
+        $this->messageCount  = $buffer->consumeInt32();
+        $this->consumerCount = $buffer->consumeInt32();
     }
 }

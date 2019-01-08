@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class ConfirmSelectFrame extends MethodFrame
@@ -19,8 +20,13 @@ class ConfirmSelectFrame extends MethodFrame
      */
     public $nowait = false;
 
-    public function __construct()
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_CONFIRM, Constants::METHOD_CONFIRM_SELECT);
+
+        [$this->nowait] = $buffer->consumeBits(1);
     }
 }

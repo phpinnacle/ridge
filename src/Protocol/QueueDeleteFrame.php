@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class QueueDeleteFrame extends MethodFrame
@@ -39,8 +40,16 @@ class QueueDeleteFrame extends MethodFrame
      */
     public $nowait = false;
 
-    public function __construct()
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_QUEUE, Constants::METHOD_QUEUE_DELETE);
+
+        $this->reserved1 = $buffer->consumeInt16();
+        $this->queue     = $buffer->consumeString();
+
+        [$this->ifUnused, $this->ifEmpty, $this->nowait] = $buffer->consumeBits(3);
     }
 }

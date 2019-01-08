@@ -6,9 +6,9 @@
 [![Quality Score][ico-code-quality]][link-code-quality]
 [![Total Downloads][ico-downloads]][link-downloads]
 
-PHPinnacle Ridge provides tools that allow your application components to communicate with each other by dispatching signals and listening to them.
+This library is a pure asynchronous PHP implementation of the AMQP 0-9-1 protocol.
 
-Thanks to [amphp](https://amphp.org) backend those communication is fully asynchronous.
+Code is mostly based on [bunnyphp](https://github.com/jakubkulhan/bunny), but use [amphp](https://amphp.org) for async operations.
 
 ## Install
 
@@ -32,8 +32,7 @@ use PHPinnacle\Ridge\Message;
 require __DIR__ . '/vendor/autoload.php';
 
 Loop::run(function () {
-    $config = Config::dsn('amqp://admin:admin123@172.23.0.3');
-    $client = new Client($config);
+    $client = Client::create('amqp://admin:admin123@172.23.0.3');
 
     yield $client->connect();
 
@@ -56,6 +55,16 @@ Loop::run(function () {
 ```
 
 More examples can be found in [`examples`](examples) directory.
+
+## Benchmark
+
+Benchmarks were run as:
+
+```bash
+
+RIDGE_BENCHMARK_DSN=amqp://user:pass@localhost:5672 php benchmark/producer.php N
+RIDGE_BENCHMARK_DSN=amqp://user:pass@localhost:5672 php benchmark/consumer.php
+```
 
 ## Change log
 

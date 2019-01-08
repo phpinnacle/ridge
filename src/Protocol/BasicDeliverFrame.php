@@ -10,37 +10,27 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
-class BasicDeliverFrame extends MethodFrame
+class BasicDeliverFrame extends MessageFrame
 {
     /**
      * @var string
      */
     public $consumerTag;
-
+    
     /**
-     * @var int
+     * @param Buffer $buffer
      */
-    public $deliveryTag;
-
-    /**
-     * @var boolean
-     */
-    public $redelivered = false;
-
-    /**
-     * @var string
-     */
-    public $exchange;
-
-    /**
-     * @var string
-     */
-    public $routingKey;
-
-    public function __construct()
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_DELIVER);
+
+        $this->consumerTag   = $buffer->consumeString();
+        $this->deliveryTag   = $buffer->consumeInt64();
+        [$this->redelivered] = $buffer->consumeBits(1);
+        $this->exchange      = $buffer->consumeString();
+        $this->routingKey    = $buffer->consumeString();
     }
 }

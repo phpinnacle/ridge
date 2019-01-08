@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class QueueUnbindFrame extends MethodFrame
@@ -39,8 +40,17 @@ class QueueUnbindFrame extends MethodFrame
      */
     public $arguments = [];
 
-    public function __construct()
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_QUEUE, Constants::METHOD_QUEUE_UNBIND);
+
+        $this->reserved1  = $buffer->consumeInt16();
+        $this->queue      = $buffer->consumeString();
+        $this->exchange   = $buffer->consumeString();
+        $this->routingKey = $buffer->consumeString();
+        $this->arguments  = $buffer->consumeTable();
     }
 }
