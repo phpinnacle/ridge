@@ -3,13 +3,18 @@
 use Amp\Loop;
 use PHPinnacle\Ridge\Channel;
 use PHPinnacle\Ridge\Client;
-use PHPinnacle\Ridge\Config;
 use PHPinnacle\Ridge\Message;
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
 Loop::run(function () {
-    $client = new Client(Config::dsn('amqp://admin:admin123@172.23.0.2'));
+    if (!$dsn = \getenv('RIDGE_BENCHMARK_DSN')) {
+        echo 'No benchmark dsn! Please set RIDGE_BENCHMARK_DSN environment variable.', \PHP_EOL;
+
+        Loop::stop();
+    }
+
+    $client = Client::create($dsn);
 
     yield $client->connect();
 
@@ -35,6 +40,5 @@ Loop::run(function () {
         } else {
             ++$count;
         }
-
     }, 'bench_queue', '', false, true);
 });

@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class ConnectionOpenOkFrame extends MethodFrame
@@ -18,11 +19,15 @@ class ConnectionOpenOkFrame extends MethodFrame
      * @var string
      */
     public $knownHosts = '';
-
-    public function __construct()
+    
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_CONNECTION, Constants::METHOD_CONNECTION_OPEN_OK);
 
-        $this->channel = Constants::CONNECTION_CHANNEL;
+        $this->channel    = Constants::CONNECTION_CHANNEL;
+        $this->knownHosts = $buffer->consumeString();
     }
 }

@@ -80,20 +80,16 @@ final class Buffer
     }
 
     /**
-     * @return bool
+     * @return string
      */
-    public function ready(): bool
+    public function flush(): string
     {
-        return \ord($this->data[-1]) === Constants::FRAME_END;
-    }
+        $data = $this->data;
 
-    /**
-     * @return void
-     */
-    public function clear(): void
-    {
-        $this->data = "";
+        $this->data = '';
         $this->size = 0;
+
+        return $data;
     }
 
     /**
@@ -228,7 +224,7 @@ final class Buffer
         }
 
         $this->data .= $s;
-        $this->size = \strlen($this->data);
+        $this->size += \strlen($s);
 
         return $this;
     }
@@ -758,7 +754,7 @@ final class Buffer
      *
      * @param int $n
      *
-     * @return array
+     * @return bool[]
      */
     public function consumeBits(int $n): array
     {

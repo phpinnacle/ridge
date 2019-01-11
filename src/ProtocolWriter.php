@@ -27,18 +27,18 @@ final class ProtocolWriter
      *
      * @return Buffer
      */
-    public static function buffer(AbstractFrame $frame): Buffer
+    public function buffer(AbstractFrame $frame): Buffer
     {
         if ($frame instanceof MethodFrame && $frame->payload !== null) {
             // payload already supplied
         } elseif ($frame instanceof MethodFrame) {
-            $frameBuffer = self::bufferMethodFrame($frame);
+            $frameBuffer = $this->bufferMethodFrame($frame);
 
             $frame->size    = $frameBuffer->size();
             $frame->payload = $frameBuffer;
 
         } elseif ($frame instanceof ContentHeaderFrame) {
-            $frameBuffer = self::bufferHeaderFrame($frame);
+            $frameBuffer = $this->bufferHeaderFrame($frame);
 
             $frame->size    = $frameBuffer->size();
             $frame->payload = $frameBuffer;
@@ -56,7 +56,7 @@ final class ProtocolWriter
             ->appendUint16($frame->channel)
             ->appendUint32($frame->size)
             ->append($frame->payload)
-            ->appendUint8(Constants::FRAME_END)
+            ->appendUint8(206)
         ;
 
         return $buffer;
@@ -67,7 +67,7 @@ final class ProtocolWriter
      *
      * @return Buffer
      */
-    private static function bufferHeaderFrame(Protocol\ContentHeaderFrame $frame): Buffer
+    private function bufferHeaderFrame(Protocol\ContentHeaderFrame $frame): Buffer
     {
         $buffer = new Buffer;
         $buffer
@@ -144,7 +144,7 @@ final class ProtocolWriter
      *
      * @return Buffer
      */
-    private static function bufferMethodFrame(Protocol\MethodFrame $frame): Buffer
+    private function bufferMethodFrame(Protocol\MethodFrame $frame): Buffer
     {
         $buffer = new Buffer;
         $buffer

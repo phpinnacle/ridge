@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class BasicCancelFrame extends MethodFrame
@@ -23,9 +24,15 @@ class BasicCancelFrame extends MethodFrame
      * @var boolean
      */
     public $nowait = false;
-
-    public function __construct()
+    
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_CANCEL);
+
+        $this->consumerTag = $buffer->consumeString();
+        [$this->nowait]    = $buffer->consumeBits(1);
     }
 }

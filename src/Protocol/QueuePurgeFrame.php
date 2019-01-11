@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class QueuePurgeFrame extends MethodFrame
@@ -29,8 +30,16 @@ class QueuePurgeFrame extends MethodFrame
      */
     public $nowait = false;
 
-    public function __construct()
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_QUEUE, Constants::METHOD_QUEUE_PURGE);
+
+        $this->reserved1 = $buffer->consumeInt16();
+        $this->queue     = $buffer->consumeString();
+
+        [$this->nowait] = $buffer->consumeBits(1);
     }
 }

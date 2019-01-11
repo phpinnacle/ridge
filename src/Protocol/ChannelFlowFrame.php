@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class ChannelFlowFrame extends MethodFrame
@@ -18,9 +19,14 @@ class ChannelFlowFrame extends MethodFrame
      * @var boolean
      */
     public $active;
-
-    public function __construct()
+    
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_CHANNEL, Constants::METHOD_CHANNEL_FLOW);
+
+        [$this->active] = $buffer->consumeBits(1);
     }
 }

@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class AccessRequestOkFrame extends MethodFrame
@@ -17,10 +18,15 @@ class AccessRequestOkFrame extends MethodFrame
     /**
      * @var int
      */
-    public $reserved1 = 1;
+    public $reserved1;
 
-    public function __construct()
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_ACCESS, Constants::METHOD_ACCESS_REQUEST_OK);
+
+        $this->reserved1 = $buffer->consumeInt16();
     }
 }

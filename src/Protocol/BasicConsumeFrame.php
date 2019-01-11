@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class BasicConsumeFrame extends MethodFrame
@@ -53,9 +54,20 @@ class BasicConsumeFrame extends MethodFrame
      * @var array
      */
     public $arguments = [];
-
-    public function __construct()
+    
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_CONSUME);
+
+        $this->reserved1   = $buffer->consumeInt16();
+        $this->queue       = $buffer->consumeString();
+        $this->consumerTag = $buffer->consumeString();
+
+        [$this->noLocal, $this->noAck, $this->exclusive, $this->nowait] = $buffer->consumeBits(4);
+
+        $this->arguments = $buffer->consumeTable();
     }
 }

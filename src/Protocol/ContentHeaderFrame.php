@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class ContentHeaderFrame extends AbstractFrame
@@ -127,13 +128,86 @@ class ContentHeaderFrame extends AbstractFrame
     }
 
     /**
+     * @param Buffer $buffer
+     *
+     * @return ContentHeaderFrame
+     */
+    public static function buffer(Buffer $buffer): self
+    {
+        $self = new self;
+
+        $self->classId  = $buffer->consumeUint16();
+        $self->weight   = $buffer->consumeUint16();
+        $self->bodySize = $buffer->consumeUint64();
+        $self->flags    = $flags = $buffer->consumeUint16();
+    
+        if ($flags & self::FLAG_CONTENT_TYPE) {
+            $self->contentType = $buffer->consumeString();
+        }
+    
+        if ($flags & self::FLAG_CONTENT_ENCODING) {
+            $self->contentEncoding = $buffer->consumeString();
+        }
+    
+        if ($flags & self::FLAG_HEADERS) {
+            $self->headers = $buffer->consumeTable();
+        }
+    
+        if ($flags & self::FLAG_DELIVERY_MODE) {
+            $self->deliveryMode = $buffer->consumeUint8();
+        }
+    
+        if ($flags & self::FLAG_PRIORITY) {
+            $self->priority = $buffer->consumeUint8();
+        }
+    
+        if ($flags & self::FLAG_CORRELATION_ID) {
+            $self->correlationId = $buffer->consumeString();
+        }
+    
+        if ($flags & self::FLAG_REPLY_TO) {
+            $self->replyTo = $buffer->consumeString();
+        }
+    
+        if ($flags & self::FLAG_EXPIRATION) {
+            $self->expiration = $buffer->consumeString();
+        }
+    
+        if ($flags & self::FLAG_MESSAGE_ID) {
+            $self->messageId = $buffer->consumeString();
+        }
+    
+        if ($flags & self::FLAG_TIMESTAMP) {
+            $self->timestamp = $buffer->consumeTimestamp();
+        }
+    
+        if ($flags & self::FLAG_TYPE) {
+            $self->typeHeader = $buffer->consumeString();
+        }
+    
+        if ($flags & self::FLAG_USER_ID) {
+            $self->userId = $buffer->consumeString();
+        }
+    
+        if ($flags & self::FLAG_APP_ID) {
+            $self->appId = $buffer->consumeString();
+        }
+    
+        if ($flags & self::FLAG_CLUSTER_ID) {
+            $self->clusterId = $buffer->consumeString();
+        }
+        
+        return $self;
+    }
+
+    /**
      * @param array $headers
      *
      * @return self
      */
     public static function fromArray(array $headers): self
     {
-        $instance = new static;
+        $instance = new self;
 
         if (isset($headers["content-type"])) {
             $instance->flags |= self::FLAG_CONTENT_TYPE;

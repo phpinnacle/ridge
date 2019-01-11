@@ -12,6 +12,7 @@ declare(strict_types = 1);
 
 namespace PHPinnacle\Ridge;
 
+use function Amp\asyncCall;
 use function Amp\call;
 use Amp\Promise;
 
@@ -45,11 +46,6 @@ final class Client
     private $nextChannelId = 1;
 
     /**
-     * @var int
-     */
-    private $channelMax = 0xFFFF;
-
-    /**
      * @var Connection
      */
     private $connection;
@@ -60,6 +56,16 @@ final class Client
     public function __construct(Config $config)
     {
         $this->config = $config;
+    }
+
+    /**
+     * @param string $dsn
+     *
+     * @return self
+     */
+    public static function create(string $dsn): self
+    {
+        return new self(Config::parse($dsn));
     }
 
     /**
@@ -74,23 +80,59 @@ final class Client
 
             $this->state = self::STATE_CONNECTING;
 
-            $this->connection = new Connection($this->config);
+            $this->connection = new Connection($this->config->uri());
 
-            yield $this->connection->connect();
+            yield $this->connection->open(
+                $this->config->timeout(),
+                $this->config->tcpAttempts(),
+                $this->config->tcpNoDelay()
+            );
+
+            $buffer = new Buffer;
+            $buffer
+                ->append('AMQP')
+                ->appendUint8(0)
+                ->appendUint8(0)
+                ->appendUint8(9)
+                ->appendUint8(1)
+            ;
+
+            yield $this->connection->write($buffer);
+
+            yield $this->connectionStart();
+            yield $this->connectionTune();
+            yield $this->connectionOpen();
+
+            asyncCall(function () {
+                yield $this->connection->await(0, Protocol\ConnectionCloseFrame::class);
+
+                $buffer = new Buffer;
+                $buffer
+                    ->appendUint8(1)
+                    ->appendUint16(0)
+                    ->appendUint32(4)
+                    ->appendUint16(10)
+                    ->appendUint16(51)
+                    ->appendUint8(206)
+                ;
+
+                $this->connection->write($buffer);
+                $this->connection->close();
+            });
 
             $this->state = self::STATE_CONNECTED;
         });
     }
 
     /**
-     * @param int    $replyCode
-     * @param string $replyText
+     * @param int    $code
+     * @param string $reason
      *
      * @return Promise<void>
      */
-    public function disconnect($replyCode = 0, $replyText = ''): Promise
+    public function disconnect(int $code = 0, string $reason = ''): Promise
     {
-        return call(function() use ($replyCode, $replyText) {
+        return call(function() use ($code, $reason) {
             if (\in_array($this->state, [self::STATE_NOT_CONNECTED, self::STATE_DISCONNECTING])) {
                 return;
             }
@@ -101,17 +143,19 @@ final class Client
 
             $this->state = self::STATE_DISCONNECTING;
 
-            if ($replyCode === 0) {
+            if ($code === 0) {
                 $promises = [];
 
-                foreach($this->channels as $channel) {
-                    $promises[] = $channel->close($replyCode, $replyText);
+                foreach($this->channels as $id => $channel) {
+                    $promises[] = $channel->close($code, $reason);
                 }
 
                 yield $promises;
             }
 
-            yield $this->connection->disconnect($replyCode, $replyText);
+            yield $this->connectionClose($code, $reason);
+
+            $this->connection->close();
 
             $this->state = self::STATE_NOT_CONNECTED;
         });
@@ -128,13 +172,38 @@ final class Client
             }
 
             try {
-                $channelId = $this->findChannelId();
-                $channel = new Channel($channelId, $this->connection);
+                $id = $this->findChannelId();
+                $channel = new Channel($id, $this->connection, $this->config->maxFrame());
 
-                $this->channels[$channelId] = &$channel;
+                $this->channels[$id] = $channel;
 
                 yield $channel->open();
                 yield $channel->qos($this->config->qosSize(), $this->config->qosCount(), $this->config->qosGlobal());
+
+                asyncCall(function () use ($id) {
+                    $frame = yield Promise\first([
+                        $this->connection->await($id, Protocol\ChannelCloseFrame::class),
+                        $this->connection->await($id, Protocol\ChannelCloseOkFrame::class)
+                    ]);
+
+                    $this->connection->cancel($id);
+
+                    if ($frame instanceof Protocol\ChannelCloseFrame) {
+                        $buffer = new Buffer;
+                        $buffer
+                            ->appendUint8(1)
+                            ->appendUint16($id)
+                            ->appendUint32(4)
+                            ->appendUint16(20)
+                            ->appendUint16(41)
+                            ->appendUint8(206)
+                        ;
+
+                        yield $this->connection->write($buffer);
+                    }
+
+                    unset($this->channels[$id]);
+                });
 
                 return $channel;
             } catch(\Throwable $throwable) {
@@ -144,33 +213,165 @@ final class Client
     }
 
     /**
+     * @return bool
+     */
+    public function isConnected(): bool
+    {
+        return $this->state === self::STATE_CONNECTED;
+    }
+
+    /**
+     * @return Promise
+     */
+    private function connectionStart(): Promise
+    {
+        return call(function () {
+            /** @var Protocol\ConnectionStartFrame $start */
+            $start = yield $this->connection->await(0, Protocol\ConnectionStartFrame::class);
+
+            if (\strpos($start->mechanisms, "AMQPLAIN") === false) {
+                throw new Exception\ClientException("Server does not support AMQPLAIN mechanism (supported: {$start->mechanisms}).");
+            }
+
+            $buffer = new Buffer;
+            $buffer
+                ->appendTable([
+                    "LOGIN"    => $this->config->user(),
+                    "PASSWORD" => $this->config->password(),
+                ])
+                ->discard(4)
+            ;
+
+            $frameBuffer = new Buffer;
+            $frameBuffer
+                ->appendUint16(10)
+                ->appendUint16(11)
+                ->appendTable([])
+                ->appendString("AMQPLAIN")
+                ->appendText((string) $buffer)
+                ->appendString("en_US")
+            ;
+
+            return $this->connection->method(0, 10, 11, $frameBuffer);
+        });
+    }
+
+    /**
+     * @return Promise
+     */
+    private function connectionTune(): Promise
+    {
+        return call(function () {
+            /** @var Protocol\ConnectionTuneFrame $tune */
+            $tune = yield $this->connection->await(0, Protocol\ConnectionTuneFrame::class);
+
+            $heartbeat = $this->config->heartbeat();
+
+            if ($heartbeat !== 0) {
+                $heartbeat = \min($heartbeat, $tune->heartbeat);
+            }
+
+            $channelMax = \min($this->config->maxChannel(), $tune->channelMax);
+            $frameMax   = \min($this->config->maxFrame(), $tune->frameMax);
+
+            $buffer = new Buffer;
+            $buffer
+                ->appendUint8(1)
+                ->appendUint16(0)
+                ->appendUint32(12)
+                ->appendUint16(10)
+                ->appendUint16(31)
+                ->appendInt16($channelMax)
+                ->appendInt32($frameMax)
+                ->appendInt16($heartbeat)
+                ->appendUint8(206);
+
+            yield $this->connection->write($buffer);
+
+            if ($heartbeat > 0) {
+                $this->connection->heartbeat($heartbeat);
+            }
+        });
+    }
+
+    /**
+     * @param string $virtualHost
+     * @param string $capabilities
+     * @param bool   $insist
+     *
+     * @return Promise<Protocol\ConnectionOpenOkFrame>
+     */
+    private function connectionOpen(string $virtualHost = '/', string $capabilities = '', bool $insist = false): Promise
+    {
+        return call(function () use ($virtualHost, $capabilities, $insist) {
+            $buffer = new Buffer;
+            $buffer
+                ->appendUint8(1)
+                ->appendUint16(0)
+                ->appendUint32(7 + \strlen($virtualHost) + \strlen($capabilities))
+                ->appendUint16(10)
+                ->appendUint16(40)
+                ->appendString($virtualHost)
+                ->appendString($capabilities)
+                ->appendBits([$insist])
+                ->appendUint8(206)
+            ;
+
+            yield $this->connection->write($buffer);
+
+            return $this->connection->await(0, Protocol\ConnectionOpenOkFrame::class);
+        });
+    }
+
+    /**
+     * @param int    $code
+     * @param string $reason
+     *
+     * @return Promise
+     */
+    private function connectionClose(int $code, string $reason): Promise
+    {
+        return call(function () use ($code, $reason) {
+            $buffer = new Buffer;
+            $buffer
+                ->appendUint8(1)
+                ->appendUint16(0)
+                ->appendUint32(11 + \strlen($reason))
+                ->appendUint16(10)
+                ->appendUint16(50)
+                ->appendInt16($code)
+                ->appendString($reason)
+                ->appendInt16(0)
+                ->appendInt16(0)
+                ->appendUint8(206)
+            ;
+
+            yield $this->connection->write($buffer);
+
+            return $this->connection->await(0, Protocol\ConnectionCloseOkFrame::class);
+        });
+    }
+
+    /**
      * @return int
      */
     private function findChannelId(): int
     {
         // first check in range [next, max] ...
-        for (
-            $channelId = $this->nextChannelId;
-            $channelId <= $this->channelMax;
-            ++$channelId
-        ) {
-            if (!isset($this->channels[$channelId])) {
-                $this->nextChannelId = $channelId + 1;
+        for ($id = $this->nextChannelId; $id <= $this->config->maxChannel(); ++$id) {
+            if (!isset($this->channels[$id])) {
+                $this->nextChannelId = $id + 1;
 
-                return $channelId;
+                return $id;
             }
         }
 
         // then check in range [min, next) ...
-        for (
-            $channelId = 1;
-            $channelId < $this->nextChannelId;
-            ++$channelId
-        ) {
-            if (!isset($this->channels[$channelId])) {
-                $this->nextChannelId = $channelId + 1;
+        for ($id = 1; $id < $this->nextChannelId; ++$id) {
+            if (!isset($this->channels[$id])) {
+                $this->nextChannelId = $id + 1;
 
-                return $channelId;
+                return $id;
             }
         }
 

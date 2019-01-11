@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class ConnectionTuneFrame extends MethodFrame
@@ -28,11 +29,17 @@ class ConnectionTuneFrame extends MethodFrame
      * @var int
      */
     public $heartbeat = 0;
-
-    public function __construct()
+    
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_CONNECTION, Constants::METHOD_CONNECTION_TUNE);
 
-        $this->channel = Constants::CONNECTION_CHANNEL;
+        $this->channel    = Constants::CONNECTION_CHANNEL;
+        $this->channelMax = $buffer->consumeInt16();
+        $this->frameMax   = $buffer->consumeInt32();
+        $this->heartbeat  = $buffer->consumeInt16();
     }
 }

@@ -10,37 +10,27 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
-class BasicGetOkFrame extends MethodFrame
+class BasicGetOkFrame extends MessageFrame
 {
     /**
      * @var int
      */
-    public $deliveryTag;
-
-    /**
-     * @var boolean
-     */
-    public $redelivered = false;
-
-    /**
-     * @var string
-     */
-    public $exchange;
-
-    /**
-     * @var string
-     */
-    public $routingKey;
-
-    /**
-     * @var int
-     */
     public $messageCount;
-
-    public function __construct()
+    
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_GET_OK);
+
+        $this->deliveryTag   = $buffer->consumeInt64();
+        [$this->redelivered] = $buffer->consumeBits(1);
+        $this->exchange      = $buffer->consumeString();
+        $this->routingKey    = $buffer->consumeString();
+        $this->messageCount  = $buffer->consumeInt32();
     }
 }

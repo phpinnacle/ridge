@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class ExchangeDeleteFrame extends MethodFrame
@@ -17,7 +18,7 @@ class ExchangeDeleteFrame extends MethodFrame
     /**
      * @var int
      */
-    public $reserved1 = 0;
+    public $reserved1;
 
     /**
      * @var string
@@ -27,15 +28,23 @@ class ExchangeDeleteFrame extends MethodFrame
     /**
      * @var boolean
      */
-    public $ifUnused = false;
+    public $ifUnused;
 
     /**
      * @var boolean
      */
-    public $nowait = false;
+    public $nowait;
 
-    public function __construct()
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_EXCHANGE, Constants::METHOD_EXCHANGE_DELETE);
+
+        $this->reserved1 = $buffer->consumeInt16();
+        $this->exchange  = $buffer->consumeString();
+
+        [$this->ifUnused, $this->nowait] = $buffer->consumeBits(2);
     }
 }

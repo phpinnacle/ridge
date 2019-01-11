@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class ConnectionStartOkFrame extends MethodFrame
@@ -34,10 +35,17 @@ class ConnectionStartOkFrame extends MethodFrame
      */
     public $locale = 'en_US';
 
-    public function __construct()
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_CONNECTION, Constants::METHOD_CONNECTION_START_OK);
 
-        $this->channel = Constants::CONNECTION_CHANNEL;
+        $this->channel          = Constants::CONNECTION_CHANNEL;
+        $this->clientProperties = $buffer->consumeTable();
+        $this->mechanism        = $buffer->consumeString();
+        $this->response         = $buffer->consumeText();
+        $this->locale           = $buffer->consumeString();
     }
 }

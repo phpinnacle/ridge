@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class ExchangeUnbindFrame extends MethodFrame
@@ -44,8 +45,18 @@ class ExchangeUnbindFrame extends MethodFrame
      */
     public $arguments = [];
 
-    public function __construct()
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_EXCHANGE, Constants::METHOD_EXCHANGE_UNBIND);
+
+        $this->reserved1   = $buffer->consumeInt16();
+        $this->destination = $buffer->consumeString();
+        $this->source      = $buffer->consumeString();
+        $this->routingKey  = $buffer->consumeString();
+        [$this->nowait]    = $buffer->consumeBits(1);
+        $this->arguments   = $buffer->consumeTable();
     }
 }

@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class BasicReturnFrame extends MethodFrame
@@ -33,9 +34,17 @@ class BasicReturnFrame extends MethodFrame
      * @var string
      */
     public $routingKey;
-
-    public function __construct()
+    
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_RETURN);
+
+        $this->replyCode  = $buffer->consumeInt16();
+        $this->replyText  = $buffer->consumeString();
+        $this->exchange   = $buffer->consumeString();
+        $this->routingKey = $buffer->consumeString();
     }
 }

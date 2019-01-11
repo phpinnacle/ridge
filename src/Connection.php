@@ -14,6 +14,7 @@ namespace PHPinnacle\Ridge;
 
 use function Amp\asyncCall, Amp\call, Amp\Socket\connect;
 use Amp\Deferred;
+use Amp\Loop;
 use Amp\Promise;
 use Amp\Socket\ClientConnectContext;
 use Amp\Socket\Socket;
@@ -21,19 +22,19 @@ use Amp\Socket\Socket;
 final class Connection
 {
     /**
-     * @var Config
+     * @var string
      */
-    private $config;
+    private $uri;
 
     /**
-     * @var Heartbeat
+     * @var ProtocolWriter
      */
-    private $heartbeat;
+    private $writer;
 
     /**
-     * @var Buffer
+     * @var ProtocolReader
      */
-    private $buffer;
+    private $reader;
 
     /**
      * @var Socket
@@ -46,23 +47,23 @@ final class Connection
     private $await = [];
 
     /**
-     * @param Config $config
+     * @var int
      */
-    public function __construct(Config $config)
-    {
-        $this->config    = $config;
-        $this->heartbeat = new Heartbeat($this);
-        $this->buffer    = new Buffer;
-    }
+    private $lastWrite = 0;
 
     /**
-     * @param Protocol\AbstractFrame $frame
-     *
-     * @return Promise
+     * @var string
      */
-    public function send(Protocol\AbstractFrame $frame): Promise
+    private $heartbeat;
+
+    /**
+     * @param string $uri
+     */
+    public function __construct(string $uri)
     {
-        return $this->write(ProtocolWriter::buffer($frame));
+        $this->uri    = $uri;
+        $this->writer = new ProtocolWriter;
+        $this->reader = new ProtocolReader;
     }
 
     /**
@@ -74,264 +75,164 @@ final class Connection
      */
     public function write(Buffer $payload): Promise
     {
-        $this->heartbeat->touch();
+        $this->lastWrite = Loop::now();
 
         /** @noinspection PhpUnhandledExceptionInspection */
-        return $this->socket->write((string) $payload);
+        return $this->socket->write($payload->flush());
     }
 
     /**
-     * @param string $frame
-     * @param int    $channel
+     * @param Protocol\AbstractFrame $frame
      *
      * @return Promise
      */
-    public function await(string $frame, int $channel): Promise
+    public function send(Protocol\AbstractFrame $frame): Promise
+    {
+        return $this->write($this->writer->buffer($frame));
+    }
+
+    /**
+     * @param int    $channel
+     * @param int    $class
+     * @param int    $method
+     * @param Buffer $payload
+     *
+     * @return Promise
+     */
+    public function method(int $channel, int $class, int $method, Buffer $payload): Promise
+    {
+        $frame = new Protocol\MethodFrame($class, $method);
+        $frame->channel = $channel;
+        $frame->payload = $payload;
+        $frame->size    = $payload->size();
+
+        return $this->send($frame);
+    }
+
+    /**
+     * @param int    $channel
+     * @param string $frame
+     *
+     * @return Promise
+     */
+    public function await(int $channel, string $frame): Promise
     {
         $deferred = new Deferred;
 
-        $this->await[$frame][$channel][] = $deferred;
+        $this->await[$channel][$frame][] = $deferred;
 
         return $deferred->promise();
     }
 
     /**
+     * @param int $channel
+     *
+     * @return void
+     */
+    public function cancel(int $channel): void
+    {
+        unset($this->await[$channel]);
+    }
+
+    /**
+     * @param int  $timeout
+     * @param int  $maxAttempts
+     * @param bool $noDelay
+     *
      * @return Promise
      */
-    public function connect(): Promise
+    public function open(int $timeout, int $maxAttempts, bool $noDelay): Promise
     {
-        return call(function () {
-            $context  = (new ClientConnectContext)->withConnectTimeout($this->config->timeout());
-
-            $this->socket = yield connect($this->config->uri(), $context);
-
-            $buffer = new Buffer;
-            $buffer
-                ->append('AMQP')
-                ->appendUint8(0)
-                ->appendUint8(0)
-                ->appendUint8(9)
-                ->appendUint8(1)
+        return call(function () use ($timeout, $maxAttempts, $noDelay) {
+            $context = (new ClientConnectContext)
+                ->withConnectTimeout($timeout)
+                ->withMaxAttempts($maxAttempts)
             ;
 
-            yield $this->write($buffer);
+            if ($noDelay) {
+                $context->withTcpNoDelay();
+            }
+
+            $this->socket = yield connect($this->uri, $context);
 
             asyncCall(function () {
                 while (null !== $chunk = yield $this->socket->read()) {
-                    $this->buffer->append($chunk);
-
-                    $this->consume();
+                    $this->consume($chunk);
                 }
-            });
 
-            return $this->doConnect();
+                unset($this->socket);
+            });
         });
     }
 
     /**
-     * @param int    $replyCode
-     * @param string $replyText
+     * @param int $interval
      *
-     * @return Promise<void>
+     * @return void
      */
-    public function disconnect(int $replyCode = 0, string $replyText = ''): Promise
+    public function heartbeat(int $interval): void
     {
-        return call(function() use ($replyCode, $replyText) {
-            $this->heartbeat->disable();
+        $milliseconds = $interval * 1000;
 
-            yield $this->connectionClose($replyCode, $replyText);
-            yield $this->connectionCloseOk();
+        $this->heartbeat = Loop::repeat($milliseconds, function($watcher) use ($milliseconds) {
+            if (!$this->socket) {
+                Loop::cancel($watcher);
 
-            // $this->closeSocket(); // TODO
+                return;
+            }
+
+            $currentTime = Loop::now();
+            $lastWrite   = $this->lastWrite;
+
+            if ($lastWrite === null) {
+                $lastWrite = $currentTime;
+            }
+
+            /** @var int $nextHeartbeat */
+            $nextHeartbeat = $lastWrite + $milliseconds;
+
+            if ($currentTime >= $nextHeartbeat) {
+                yield $this->send(new Protocol\HeartbeatFrame);
+            }
+
+            unset($currentTime, $lastWrite, $nextHeartbeat);
         });
     }
 
     /**
      * @return void
      */
-    private function consume(): void
+    public function close(): void
     {
-        while ($frame = ProtocolReader::frame($this->buffer)) {
+        if ($this->heartbeat !== null) {
+            Loop::cancel($this->heartbeat);
+
+            unset($this->heartbeat);
+        }
+
+        $this->socket->close();
+
+        $this->await = [];
+    }
+
+    /**
+     * @param string $chunk
+     *
+     * @return void
+     */
+    private function consume(string $chunk): void
+    {
+        $this->reader->append($chunk);
+
+        while ($frame = $this->reader->frame()) {
             $class  = \get_class($frame);
-            $defers = $this->await[$class][$frame->channel] ?? [];
+            $defers = $this->await[$frame->channel][$class] ?? [];
 
-            foreach ($defers as $defer) {
+            foreach ($defers as $i => $defer) {
                 $defer->resolve($frame);
-            }
 
-            unset($this->await[$class]);
+                unset($this->await[$frame->channel][$class][$i]);
+            }
         }
     }
-
-    /**
-     * Execute connect
-     *
-     * @return Promise<void>
-     */
-    private function doConnect(): Promise
-    {
-        return call(function () {
-            yield $this->connectionStart();
-            yield $this->connectionTune();
-
-            return $this->connectionOpen((string) ($this->options['vhost'] ?? '/'));
-        });
-    }
-
-    /**
-     * @return Promise
-     */
-    private function connectionStart(): Promise
-    {
-        return call(function () {
-            /** @var Protocol\ConnectionStartFrame $start */
-            $start = yield $this->await(Protocol\ConnectionStartFrame::class, 0);
-
-            if (\strpos($start->mechanisms, "AMQPLAIN") === false) {
-                throw new Exception\ClientException("Server does not support AMQPLAIN mechanism (supported: {$start->mechanisms}).");
-            }
-
-            $buffer = new Buffer;
-            $buffer
-                ->appendTable([
-                    "LOGIN"    => $this->config->user(),
-                    "PASSWORD" => $this->config->password(),
-                ])
-                ->discard(4)
-            ;
-
-            $frameBuffer = new Buffer;
-            $frameBuffer
-                ->appendUint16(10)
-                ->appendUint16(11)
-                ->appendTable([])
-                ->appendString("AMQPLAIN")
-                ->appendText((string) $buffer)
-                ->appendString("en_US")
-            ;
-
-            $frame = new Protocol\MethodFrame(10, 11);
-            $frame->channel = 0;
-            $frame->size    = $frameBuffer->size();
-            $frame->payload = $frameBuffer;
-
-            return $this->send($frame);
-        });
-    }
-
-    /**
-     * @return Promise
-     */
-    private function connectionTune(): Promise
-    {
-        return call(function () {
-            /** @var Protocol\ConnectionTuneFrame $tune */
-            $tune = yield $this->await(Protocol\ConnectionTuneFrame::class, 0);
-
-            $buffer = new Buffer;
-            $buffer
-                ->appendUint8(1)
-                ->appendUint16(0)
-                ->appendUint32(12)
-                ->appendUint16(10)
-                ->appendUint16(31)
-                ->appendInt16($tune->channelMax)
-                ->appendInt32($tune->frameMax)
-                ->appendInt16($tune->heartbeat)
-                ->appendUint8(206);
-
-            yield $this->write($buffer);
-
-            if ($tune->heartbeat > 0) {
-                $this->heartbeat->enable($tune->heartbeat);
-            }
-        });
-    }
-
-    /**
-     * @param string $virtualHost
-     * @param string $capabilities
-     * @param bool   $insist
-     *
-     * @return Promise<Protocol\ConnectionOpenOkFrame>
-     */
-    private function connectionOpen(string $virtualHost = '/', string $capabilities = '', bool $insist = false): Promise
-    {
-        return call(function () use ($virtualHost, $capabilities, $insist) {
-            $buffer = new Buffer;
-            $buffer
-                ->appendUint8(1)
-                ->appendUint16(0)
-                ->appendUint32(7 + \strlen($virtualHost) + \strlen($capabilities))
-                ->appendUint16(10)
-                ->appendUint16(40)
-                ->appendString($virtualHost)
-                ->appendString($capabilities)
-                ->appendBits([$insist])
-                ->appendUint8(206)
-            ;
-
-            yield $this->write($buffer);
-
-            return $this->await(Protocol\ConnectionOpenOkFrame::class, 0);
-        });
-    }
-
-    /**
-     * @param int    $code
-     * @param string $reason
-     *
-     * @return Promise
-     */
-    private function connectionClose(int $code, string $reason): Promise
-    {
-        $buffer = new Buffer;
-        $buffer
-            ->appendUint8(1)
-            ->appendUint16(0)
-            ->appendUint32(11 + \strlen($reason))
-            ->appendUint16(10)
-            ->appendUint16(50)
-            ->appendInt16($code)
-            ->appendString($reason)
-            ->appendInt16(0)
-            ->appendInt16(0)
-            ->appendUint8(206)
-        ;
-
-        return $this->write($buffer);
-    }
-
-    /**
-     * @return Promise
-     */
-    private function connectionCloseOk(): Promise
-    {
-        return call(function () {
-            yield $this->await(Protocol\ConnectionCloseOkFrame::class, 0);
-
-            $buffer = new Buffer;
-            $buffer
-                ->appendUint8(1)
-                ->appendUint16(0)
-                ->appendUint32(4)
-                ->appendUint16(10)
-                ->appendUint16(51)
-                ->appendUint8(206)
-            ;
-
-            return $this->write($buffer);
-        });
-    }
-
-//    /**
-//     * @return void
-//     */
-//    private function closeSocket(): void
-//    {
-//        if ($this->socket) {
-//            $this->socket->close();
-//            $this->socket = null;
-//        }
-//    }
 }

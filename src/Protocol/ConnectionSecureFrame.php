@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class ConnectionSecureFrame extends MethodFrame
@@ -19,10 +20,14 @@ class ConnectionSecureFrame extends MethodFrame
      */
     public $challenge;
 
-    public function __construct()
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_CONNECTION, Constants::METHOD_CONNECTION_SECURE);
 
-        $this->channel = Constants::CONNECTION_CHANNEL;
+        $this->channel   = Constants::CONNECTION_CHANNEL;
+        $this->challenge = $buffer->consumeText();
     }
 }

@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class QueueBindFrame extends MethodFrame
@@ -44,8 +45,20 @@ class QueueBindFrame extends MethodFrame
      */
     public $arguments = [];
 
-    public function __construct()
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_QUEUE, Constants::METHOD_QUEUE_BIND);
+
+        $this->reserved1  = $buffer->consumeInt16();
+        $this->queue      = $buffer->consumeString();
+        $this->exchange   = $buffer->consumeString();
+        $this->routingKey = $buffer->consumeString();
+
+        [$this->nowait] = $buffer->consumeBits(1);
+
+        $this->arguments = $buffer->consumeTable();
     }
 }

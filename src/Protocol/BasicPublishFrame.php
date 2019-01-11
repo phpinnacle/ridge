@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class BasicPublishFrame extends MethodFrame
@@ -38,9 +39,18 @@ class BasicPublishFrame extends MethodFrame
      * @var boolean
      */
     public $immediate = false;
-
-    public function __construct()
+    
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_PUBLISH);
+
+        $this->reserved1  = $buffer->consumeInt16();
+        $this->exchange   = $buffer->consumeString();
+        $this->routingKey = $buffer->consumeString();
+
+        [$this->mandatory, $this->immediate] = $buffer->consumeBits(2);
     }
 }

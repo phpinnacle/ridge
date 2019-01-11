@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class BasicGetFrame extends MethodFrame
@@ -29,8 +30,15 @@ class BasicGetFrame extends MethodFrame
      */
     public $noAck = false;
 
-    public function __construct()
+    /**
+     * @param Buffer $buffer
+     */
+    public function __construct(Buffer $buffer)
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_GET);
+
+        $this->reserved1 = $buffer->consumeInt16();
+        $this->queue     = $buffer->consumeString();
+        [$this->noAck]   = $buffer->consumeBits(1);
     }
 }
