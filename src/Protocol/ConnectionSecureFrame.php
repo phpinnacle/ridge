@@ -19,15 +19,35 @@ class ConnectionSecureFrame extends MethodFrame
      * @var string
      */
     public $challenge;
-
-    /**
-     * @param Buffer $buffer
-     */
-    public function __construct(Buffer $buffer)
+    
+    public function __construct()
     {
         parent::__construct(Constants::CLASS_CONNECTION, Constants::METHOD_CONNECTION_SECURE);
+    
+        $this->channel = Constants::CONNECTION_CHANNEL;
+    }
+    
+    /**
+     * @param Buffer $buffer
+     *
+     * @return self
+     */
+    public static function unpack(Buffer $buffer): self
+    {
+        $self = new self;
+        $self->challenge = $buffer->consumeText();
+        
+        return $self;
+    }
 
-        $this->channel   = Constants::CONNECTION_CHANNEL;
-        $this->challenge = $buffer->consumeText();
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendText($this->challenge);
+        
+        return $buffer;
     }
 }

@@ -35,16 +35,38 @@ class BasicReturnFrame extends MethodFrame
      */
     public $routingKey;
     
-    /**
-     * @param Buffer $buffer
-     */
-    public function __construct(Buffer $buffer)
+    public function __construct()
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_RETURN);
-
-        $this->replyCode  = $buffer->consumeInt16();
-        $this->replyText  = $buffer->consumeString();
-        $this->exchange   = $buffer->consumeString();
-        $this->routingKey = $buffer->consumeString();
+    }
+    
+    /**
+     * @param Buffer $buffer
+     *
+     * @return self
+     */
+    public static function unpack(Buffer $buffer): self
+    {
+        $self = new self;
+        $self->replyCode  = $buffer->consumeInt16();
+        $self->replyText  = $buffer->consumeString();
+        $self->exchange   = $buffer->consumeString();
+        $self->routingKey = $buffer->consumeString();
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendInt16($this->replyCode);
+        $buffer->appendString($this->replyText);
+        $buffer->appendString($this->exchange);
+        $buffer->appendString($this->routingKey);
+        
+        return $buffer;
     }
 }

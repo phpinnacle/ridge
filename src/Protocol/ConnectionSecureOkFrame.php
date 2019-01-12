@@ -20,14 +20,34 @@ class ConnectionSecureOkFrame extends MethodFrame
      */
     public $response;
     
-    /**
-     * @param Buffer $buffer
-     */
-    public function __construct(Buffer $buffer)
+    public function __construct()
     {
         parent::__construct(Constants::CLASS_CONNECTION, Constants::METHOD_CONNECTION_SECURE_OK);
+    
+        $this->channel = Constants::CONNECTION_CHANNEL;
+    }
+    
+    /**
+     * @param Buffer $buffer
+     *
+     * @return self
+     */
+    public static function unpack(Buffer $buffer): self
+    {
+        $self = new self;
+        $self->response = $buffer->consumeText();
 
-        $this->channel  = Constants::CONNECTION_CHANNEL;
-        $this->response = $buffer->consumeText();
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendText($this->response);
+
+        return $buffer;
     }
 }

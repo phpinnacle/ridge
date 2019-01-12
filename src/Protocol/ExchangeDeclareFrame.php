@@ -28,51 +28,74 @@ class ExchangeDeclareFrame extends MethodFrame
     /**
      * @var string
      */
-    public $exchangeType;
+    public $exchangeType = 'direct';
 
     /**
      * @var boolean
      */
-    public $passive;
+    public $passive = false;
 
     /**
      * @var boolean
      */
-    public $durable;
+    public $durable = false;
 
     /**
      * @var boolean
      */
-    public $autoDelete;
+    public $autoDelete = false;
 
     /**
      * @var boolean
      */
-    public $internal;
+    public $internal = false;
 
     /**
      * @var boolean
      */
-    public $nowait;
+    public $nowait = false;
 
     /**
      * @var array
      */
     public $arguments = [];
 
-    /**
-     * @param Buffer $buffer
-     */
-    public function __construct(Buffer $buffer)
+    public function __construct()
     {
         parent::__construct(Constants::CLASS_EXCHANGE, Constants::METHOD_EXCHANGE_DECLARE);
+    }
+    
+    /**
+     * @param Buffer $buffer
+     *
+     * @return self
+     */
+    public static function unpack(Buffer $buffer): self
+    {
+        $self = new self;
+        $self->reserved1    = $buffer->consumeInt16();
+        $self->exchange     = $buffer->consumeString();
+        $self->exchangeType = $buffer->consumeString();
 
-        $this->reserved1    = $buffer->consumeInt16();
-        $this->exchange     = $buffer->consumeString();
-        $this->exchangeType = $buffer->consumeString();
+        [$self->passive, $self->durable, $self->autoDelete, $self->internal, $self->nowait] = $buffer->consumeBits(5);
 
-        [$this->passive, $this->durable, $this->autoDelete, $this->internal, $this->nowait] = $buffer->consumeBits(5);
-
-        $this->arguments = $buffer->consumeTable();
+        $self->arguments = $buffer->consumeTable();
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendInt16($this->reserved1);
+        $buffer->appendString($this->exchange);
+        $buffer->appendString($this->exchangeType);
+        $buffer->appendBits([$this->passive, $this->durable, $this->autoDelete, $this->internal, $this->nowait]);
+        $buffer->appendTable($this->arguments);
+        
+        return $buffer;
     }
 }

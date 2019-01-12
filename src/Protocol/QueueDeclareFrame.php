@@ -55,18 +55,40 @@ class QueueDeclareFrame extends MethodFrame
      */
     public $arguments = [];
 
-    /**
-     * @param Buffer $buffer
-     */
-    public function __construct(Buffer $buffer)
+    public function __construct()
     {
         parent::__construct(Constants::CLASS_QUEUE, Constants::METHOD_QUEUE_DECLARE);
-
-        $this->reserved1 = $buffer->consumeInt16();
-        $this->queue     = $buffer->consumeString();
-
-        [$this->passive, $this->durable, $this->exclusive, $this->autoDelete, $this->nowait] = $buffer->consumeBits(5);
-
-        $this->arguments = $buffer->consumeTable();
+    }
+    
+    /**
+     * @param Buffer $buffer
+     *
+     * @return self
+     */
+    public static function unpack(Buffer $buffer): self
+    {
+        $self = new self;
+        $self->reserved1 = $buffer->consumeInt16();
+        $self->queue     = $buffer->consumeString();
+    
+        [$self->passive, $self->durable, $self->exclusive, $self->autoDelete, $self->nowait] = $buffer->consumeBits(5);
+    
+        $self->arguments = $buffer->consumeTable();
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendInt16($this->reserved1);
+        $buffer->appendString($this->queue);
+        $buffer->appendBits([$this->passive, $this->durable, $this->exclusive, $this->autoDelete, $this->nowait]);
+        $buffer->appendTable($this->arguments);
+        
+        return $buffer;
     }
 }

@@ -19,14 +19,34 @@ class AccessRequestOkFrame extends MethodFrame
      * @var int
      */
     public $reserved1;
-
-    /**
-     * @param Buffer $buffer
-     */
-    public function __construct(Buffer $buffer)
+    
+    public function __construct()
     {
         parent::__construct(Constants::CLASS_ACCESS, Constants::METHOD_ACCESS_REQUEST_OK);
 
-        $this->reserved1 = $buffer->consumeInt16();
+    }
+    
+    /**
+     * @param Buffer $buffer
+     *
+     * @return self
+     */
+    public static function unpack(Buffer $buffer): self
+    {
+        $self = new self;
+        $self->reserved1 = $buffer->consumeInt16();
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendInt16($this->reserved1);
+        
+        return $buffer;
     }
 }

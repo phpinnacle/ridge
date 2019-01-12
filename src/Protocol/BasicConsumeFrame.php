@@ -54,20 +54,43 @@ class BasicConsumeFrame extends MethodFrame
      * @var array
      */
     public $arguments = [];
+
+    public function __construct()
+    {
+        parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_CONSUME);
+    }
     
     /**
      * @param Buffer $buffer
+     *
+     * @return self
      */
-    public function __construct(Buffer $buffer)
+    public static function unpack(Buffer $buffer): self
     {
-        parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_CONSUME);
-
-        $this->reserved1   = $buffer->consumeInt16();
-        $this->queue       = $buffer->consumeString();
-        $this->consumerTag = $buffer->consumeString();
-
-        [$this->noLocal, $this->noAck, $this->exclusive, $this->nowait] = $buffer->consumeBits(4);
-
-        $this->arguments = $buffer->consumeTable();
+        $self = new self;
+        $self->reserved1   = $buffer->consumeInt16();
+        $self->queue       = $buffer->consumeString();
+        $self->consumerTag = $buffer->consumeString();
+    
+        [$self->noLocal, $self->noAck, $self->exclusive, $self->nowait] = $buffer->consumeBits(4);
+    
+        $self->arguments = $buffer->consumeTable();
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendInt16($this->reserved1);
+        $buffer->appendString($this->queue);
+        $buffer->appendString($this->consumerTag);
+        $buffer->appendBits([$this->noLocal, $this->noAck, $this->exclusive, $this->nowait]);
+        $buffer->appendTable($this->arguments);
+        
+        return $buffer;
     }
 }

@@ -20,13 +20,33 @@ class ChannelOpenFrame extends MethodFrame
      */
     public $outOfBand = '';
     
-    /**
-     * @param Buffer $buffer
-     */
-    public function __construct(Buffer $buffer)
+    public function __construct()
     {
         parent::__construct(Constants::CLASS_CHANNEL, Constants::METHOD_CHANNEL_OPEN);
-
-        $this->outOfBand = $buffer->consumeString();
+    }
+    
+    /**
+     * @param Buffer $buffer
+     *
+     * @return self
+     */
+    public static function unpack(Buffer $buffer): self
+    {
+        $self = new self;
+    
+        $self->outOfBand = $buffer->consumeString();
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendString($this->outOfBand);
+        
+        return $buffer;
     }
 }

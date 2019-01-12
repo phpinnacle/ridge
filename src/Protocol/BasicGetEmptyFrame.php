@@ -20,13 +20,32 @@ class BasicGetEmptyFrame extends MethodFrame
      */
     public $clusterId = '';
     
-    /**
-     * @param Buffer $buffer
-     */
-    public function __construct(Buffer $buffer)
+    public function __construct()
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_GET_EMPTY);
-
-        $this->clusterId = $buffer->consumeString();
+    }
+    
+    /**
+     * @param Buffer $buffer
+     *
+     * @return self
+     */
+    public static function unpack(Buffer $buffer): self
+    {
+        $self = new self;
+        $self->clusterId = $buffer->consumeString();
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendString($this->clusterId);
+        
+        return $buffer;
     }
 }

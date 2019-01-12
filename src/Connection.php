@@ -14,10 +14,14 @@ namespace PHPinnacle\Ridge;
 
 use function Amp\asyncCall, Amp\call, Amp\Socket\connect;
 use Amp\Deferred;
+use Amp\Emitter;
+use Amp\Iterator;
 use Amp\Loop;
 use Amp\Promise;
 use Amp\Socket\ClientConnectContext;
 use Amp\Socket\Socket;
+use PHPinnacle\Ridge\Protocol\ContentHeaderFrame;
+use PHPinnacle\Ridge\Protocol\MethodFrame;
 
 final class Connection
 {
@@ -27,14 +31,9 @@ final class Connection
     private $uri;
 
     /**
-     * @var ProtocolWriter
+     * @var Parser
      */
-    private $writer;
-
-    /**
-     * @var ProtocolReader
-     */
-    private $reader;
+    private $parser;
 
     /**
      * @var Socket
@@ -62,8 +61,7 @@ final class Connection
     public function __construct(string $uri)
     {
         $this->uri    = $uri;
-        $this->writer = new ProtocolWriter;
-        $this->reader = new ProtocolReader;
+        $this->parser = new Parser;
     }
 
     /**
@@ -88,7 +86,28 @@ final class Connection
      */
     public function send(Protocol\AbstractFrame $frame): Promise
     {
-        return $this->write($this->writer->buffer($frame));
+        if ($frame instanceof MethodFrame && $frame->payload !== null) {
+            // payload already supplied
+        } elseif ($frame instanceof MethodFrame || $frame instanceof ContentHeaderFrame) {
+            $buffer = $frame->pack();
+        
+            $frame->size    = $buffer->size();
+            $frame->payload = $buffer;
+        } elseif ($frame instanceof Protocol\ContentBodyFrame) {
+            // body frame's payload is already loaded
+        } elseif ($frame instanceof Protocol\HeartbeatFrame) {
+            // heartbeat frame is empty
+        } else {
+            throw Exception\ProtocolException::unknownFrameClass($frame);
+        }
+
+        return $this->write((new Buffer)
+            ->appendUint8($frame->type)
+            ->appendUint16($frame->channel)
+            ->appendUint32($frame->size)
+            ->append($frame->payload)
+            ->appendUint8(206)
+        );
     }
 
     /**
@@ -222,15 +241,15 @@ final class Connection
      */
     private function consume(string $chunk): void
     {
-        $this->reader->append($chunk);
+        $this->parser->append($chunk);
 
-        while ($frame = $this->reader->frame()) {
+        while ($frame = $this->parser->parse()) {
             $class  = \get_class($frame);
             $defers = $this->await[$frame->channel][$class] ?? [];
-
+    
             foreach ($defers as $i => $defer) {
                 $defer->resolve($frame);
-
+        
                 unset($this->await[$frame->channel][$class][$i]);
             }
         }

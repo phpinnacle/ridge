@@ -40,17 +40,39 @@ class BasicPublishFrame extends MethodFrame
      */
     public $immediate = false;
     
-    /**
-     * @param Buffer $buffer
-     */
-    public function __construct(Buffer $buffer)
+    public function __construct()
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_PUBLISH);
-
-        $this->reserved1  = $buffer->consumeInt16();
-        $this->exchange   = $buffer->consumeString();
-        $this->routingKey = $buffer->consumeString();
-
-        [$this->mandatory, $this->immediate] = $buffer->consumeBits(2);
+    }
+    
+    /**
+     * @param Buffer $buffer
+     *
+     * @return self
+     */
+    public static function unpack(Buffer $buffer): self
+    {
+        $self = new self;
+        $self->reserved1  = $buffer->consumeInt16();
+        $self->exchange   = $buffer->consumeString();
+        $self->routingKey = $buffer->consumeString();
+    
+        [$self->mandatory, $self->immediate] = $buffer->consumeBits(2);
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendInt16($this->reserved1);
+        $buffer->appendString($this->exchange);
+        $buffer->appendString($this->routingKey);
+        $buffer->appendBits([$this->mandatory, $this->immediate]);
+        
+        return $buffer;
     }
 }

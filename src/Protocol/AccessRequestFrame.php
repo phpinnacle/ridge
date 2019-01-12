@@ -23,43 +23,65 @@ class AccessRequestFrame extends MethodFrame
     /**
      * @var boolean
      */
-    public $exclusive;
+    public $exclusive = false;
 
     /**
      * @var boolean
      */
-    public $passive;
+    public $passive = false;
 
     /**
      * @var boolean
      */
-    public $active;
+    public $active = false;
 
     /**
      * @var boolean
      */
-    public $write;
+    public $write = false;
 
     /**
      * @var boolean
      */
-    public $read;
+    public $read = false;
 
-    /**
-     * @param Buffer $buffer
-     */
-    public function __construct(Buffer $buffer)
+    public function __construct()
     {
         parent::__construct(Constants::CLASS_ACCESS, Constants::METHOD_ACCESS_REQUEST);
 
-        $this->realm = $buffer->consumeString();
-
+    }
+    
+    /**
+     * @param Buffer $buffer
+     *
+     * @return self
+     */
+    public static function unpack(Buffer $buffer): self
+    {
+        $self = new self;
+    
+        $self->realm = $buffer->consumeString();
+    
         [
-            $this->exclusive,
-            $this->passive,
-            $this->active,
-            $this->write,
-            $this->read
+            $self->exclusive,
+            $self->passive,
+            $self->active,
+            $self->write,
+            $self->read
         ] = $buffer->consumeBits(5);
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendString($this->realm);
+        $buffer->appendBits([$this->exclusive, $this->passive, $this->active, $this->write, $this->read]);
+        
+        return $buffer;
     }
 }

@@ -19,14 +19,33 @@ class ConfirmSelectFrame extends MethodFrame
      * @var boolean
      */
     public $nowait = false;
-
-    /**
-     * @param Buffer $buffer
-     */
-    public function __construct(Buffer $buffer)
+    
+    public function __construct()
     {
         parent::__construct(Constants::CLASS_CONFIRM, Constants::METHOD_CONFIRM_SELECT);
-
-        [$this->nowait] = $buffer->consumeBits(1);
+    }
+    
+    /**
+     * @param Buffer $buffer
+     *
+     * @return self
+     */
+    public static function unpack(Buffer $buffer): self
+    {
+        $self = new self;
+        [$self->nowait] = $buffer->consumeBits(1);
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendBits([$this->nowait]);
+        
+        return $buffer;
     }
 }

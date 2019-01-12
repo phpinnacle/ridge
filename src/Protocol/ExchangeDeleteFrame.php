@@ -28,23 +28,45 @@ class ExchangeDeleteFrame extends MethodFrame
     /**
      * @var boolean
      */
-    public $ifUnused;
+    public $ifUnused = true;
 
     /**
      * @var boolean
      */
-    public $nowait;
+    public $nowait = false;
 
-    /**
-     * @param Buffer $buffer
-     */
-    public function __construct(Buffer $buffer)
+    public function __construct()
     {
         parent::__construct(Constants::CLASS_EXCHANGE, Constants::METHOD_EXCHANGE_DELETE);
-
-        $this->reserved1 = $buffer->consumeInt16();
-        $this->exchange  = $buffer->consumeString();
-
-        [$this->ifUnused, $this->nowait] = $buffer->consumeBits(2);
+    }
+    
+    /**
+     * @param Buffer $buffer
+     *
+     * @return self
+     */
+    public static function unpack(Buffer $buffer): self
+    {
+        $self = new self;
+    
+        $self->reserved1 = $buffer->consumeInt16();
+        $self->exchange  = $buffer->consumeString();
+    
+        [$self->ifUnused, $self->nowait] = $buffer->consumeBits(2);
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendInt16($this->reserved1);
+        $buffer->appendString($this->exchange);
+        $buffer->appendBits([$this->ifUnused, $this->nowait]);
+        
+        return $buffer;
     }
 }

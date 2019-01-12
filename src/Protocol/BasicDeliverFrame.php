@@ -20,17 +20,40 @@ class BasicDeliverFrame extends MessageFrame
      */
     public $consumerTag;
     
-    /**
-     * @param Buffer $buffer
-     */
-    public function __construct(Buffer $buffer)
+    public function __construct()
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_DELIVER);
-
-        $this->consumerTag   = $buffer->consumeString();
-        $this->deliveryTag   = $buffer->consumeInt64();
-        [$this->redelivered] = $buffer->consumeBits(1);
-        $this->exchange      = $buffer->consumeString();
-        $this->routingKey    = $buffer->consumeString();
+    }
+    
+    /**
+     * @param Buffer $buffer
+     *
+     * @return self
+     */
+    public static function unpack(Buffer $buffer): self
+    {
+        $self = new self;
+        $self->consumerTag   = $buffer->consumeString();
+        $self->deliveryTag   = $buffer->consumeInt64();
+        [$self->redelivered] = $buffer->consumeBits(1);
+        $self->exchange      = $buffer->consumeString();
+        $self->routingKey    = $buffer->consumeString();
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendString($this->consumerTag);
+        $buffer->appendInt64($this->deliveryTag);
+        $buffer->appendBits([$this->redelivered]);
+        $buffer->appendString($this->exchange);
+        $buffer->appendString($this->routingKey);
+        
+        return $buffer;
     }
 }

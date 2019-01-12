@@ -10,6 +10,7 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
+use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
 class MethodFrame extends AbstractFrame
@@ -34,5 +35,19 @@ class MethodFrame extends AbstractFrame
 
         $this->classId = $classId;
         $this->methodId = $methodId;
+    }
+
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = new Buffer;
+        $buffer
+            ->appendUint16($this->classId)
+            ->appendUint16($this->methodId)
+        ;
+
+        return $buffer;
     }
 }

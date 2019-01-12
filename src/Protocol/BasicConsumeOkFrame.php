@@ -19,14 +19,33 @@ class BasicConsumeOkFrame extends MethodFrame
      * @var string
      */
     public $consumerTag;
+
+    public function __construct()
+    {
+        parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_CONSUME_OK);
+    }
     
     /**
      * @param Buffer $buffer
+     *
+     * @return self
      */
-    public function __construct(Buffer $buffer)
+    public static function unpack(Buffer $buffer): self
     {
-        parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_CONSUME_OK);
-
-        $this->consumerTag = $buffer->consumeString();
+        $self = new self;
+        $self->consumerTag = $buffer->consumeString();
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendString($this->consumerTag);
+        
+        return $buffer;
     }
 }

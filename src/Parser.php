@@ -10,7 +10,7 @@
 
 namespace PHPinnacle\Ridge;
 
-class ProtocolReader
+class Parser
 {
     /**
      * @var Buffer
@@ -39,7 +39,7 @@ class ProtocolReader
      *
      * @return Protocol\AbstractFrame
      */
-    public function frame(): ?Protocol\AbstractFrame
+    public function parse(): ?Protocol\AbstractFrame
     {
         if ($this->buffer->size() < 7) {
             return null;
@@ -53,7 +53,7 @@ class ProtocolReader
             return null;
         }
 
-        $this->buffer->consume(7);
+        $this->buffer->discard(7);
 
         $payload  = $this->buffer->consume($size);
         $frameEnd = $this->buffer->consumeUint8();
@@ -64,7 +64,7 @@ class ProtocolReader
 
         switch ($type) {
             case Constants::FRAME_HEADER:
-                $frame = Protocol\ContentHeaderFrame::buffer(new Buffer($payload));
+                $frame = Protocol\ContentHeaderFrame::unpack(new Buffer($payload));
 
                 break;
             case Constants::FRAME_BODY:
@@ -136,41 +136,41 @@ class ProtocolReader
     {
         switch ($methodId) {
             case Constants::METHOD_BASIC_DELIVER:
-                return new Protocol\BasicDeliverFrame($buffer);
+                return Protocol\BasicDeliverFrame::unpack($buffer);
             case Constants::METHOD_BASIC_GET:
-                return new Protocol\BasicGetFrame($buffer);
+                return Protocol\BasicGetFrame::unpack($buffer);
             case Constants::METHOD_BASIC_GET_OK:
-                return new Protocol\BasicGetOkFrame($buffer);
+                return Protocol\BasicGetOkFrame::unpack($buffer);
+            case Constants::METHOD_BASIC_GET_EMPTY:
+                return Protocol\BasicGetEmptyFrame::unpack($buffer);
+            case Constants::METHOD_BASIC_PUBLISH:
+                return Protocol\BasicPublishFrame::unpack($buffer);
+            case Constants::METHOD_BASIC_RETURN:
+                return Protocol\BasicReturnFrame::unpack($buffer);
+            case Constants::METHOD_BASIC_ACK:
+                return Protocol\BasicAckFrame::unpack($buffer);
+            case Constants::METHOD_BASIC_NACK:
+                return Protocol\BasicNackFrame::unpack($buffer);
+            case Constants::METHOD_BASIC_REJECT:
+                return Protocol\BasicRejectFrame::unpack($buffer);
             case Constants::METHOD_BASIC_QOS:
-                return new Protocol\BasicQosFrame($buffer);
+                return Protocol\BasicQosFrame::unpack($buffer);
             case Constants::METHOD_BASIC_QOS_OK:
                 return new Protocol\BasicQosOkFrame;
             case Constants::METHOD_BASIC_CONSUME:
-                return new Protocol\BasicConsumeFrame($buffer);
+                return Protocol\BasicConsumeFrame::unpack($buffer);
             case Constants::METHOD_BASIC_CONSUME_OK:
-                return new Protocol\BasicConsumeOkFrame($buffer);
+                return Protocol\BasicConsumeOkFrame::unpack($buffer);
             case Constants::METHOD_BASIC_CANCEL:
-                return new Protocol\BasicCancelFrame($buffer);
+                return Protocol\BasicCancelFrame::unpack($buffer);
             case Constants::METHOD_BASIC_CANCEL_OK:
-                return new Protocol\BasicCancelOkFrame($buffer);
+                return Protocol\BasicCancelOkFrame::unpack($buffer);
             case Constants::METHOD_BASIC_RECOVER:
-                return new Protocol\BasicRecoverFrame($buffer);
+                return Protocol\BasicRecoverFrame::unpack($buffer);
             case Constants::METHOD_BASIC_RECOVER_OK:
                 return new Protocol\BasicRecoverOkFrame;
             case Constants::METHOD_BASIC_RECOVER_ASYNC:
-                return new Protocol\BasicRecoverAsyncFrame($buffer);
-            case Constants::METHOD_BASIC_PUBLISH:
-                return new Protocol\BasicPublishFrame($buffer);
-            case Constants::METHOD_BASIC_RETURN:
-                return new Protocol\BasicReturnFrame($buffer);
-            case Constants::METHOD_BASIC_GET_EMPTY:
-                return new Protocol\BasicGetEmptyFrame($buffer);
-            case Constants::METHOD_BASIC_ACK:
-                return new Protocol\BasicAckFrame($buffer);
-            case Constants::METHOD_BASIC_NACK:
-                return new Protocol\BasicNackFrame($buffer);
-            case Constants::METHOD_BASIC_REJECT:
-                return new Protocol\BasicRejectFrame($buffer);
+                return Protocol\BasicRecoverAsyncFrame::unpack($buffer);
             default:
                 throw new Exception\MethodInvalid(Constants::CLASS_BASIC, $methodId);
         }
@@ -186,27 +186,27 @@ class ProtocolReader
     {
         switch ($methodId) {
             case Constants::METHOD_CONNECTION_START:
-                return new Protocol\ConnectionStartFrame($buffer);
+                return Protocol\ConnectionStartFrame::unpack($buffer);
             case Constants::METHOD_CONNECTION_START_OK:
-                return new Protocol\ConnectionStartOkFrame($buffer);
+                return Protocol\ConnectionStartOkFrame::unpack($buffer);
             case Constants::METHOD_CONNECTION_SECURE:
-                return new Protocol\ConnectionSecureFrame($buffer);
+                return Protocol\ConnectionSecureFrame::unpack($buffer);
             case Constants::METHOD_CONNECTION_SECURE_OK:
-                return new Protocol\ConnectionSecureOkFrame($buffer);
+                return Protocol\ConnectionSecureOkFrame::unpack($buffer);
             case Constants::METHOD_CONNECTION_TUNE:
-                return new Protocol\ConnectionTuneFrame($buffer);
+                return Protocol\ConnectionTuneFrame::unpack($buffer);
             case Constants::METHOD_CONNECTION_TUNE_OK:
-                return new Protocol\ConnectionTuneOkFrame($buffer);
+                return Protocol\ConnectionTuneOkFrame::unpack($buffer);
             case Constants::METHOD_CONNECTION_OPEN:
-                return new Protocol\ConnectionOpenFrame($buffer);
+                return Protocol\ConnectionOpenFrame::unpack($buffer);
             case Constants::METHOD_CONNECTION_OPEN_OK:
-                return new Protocol\ConnectionOpenOkFrame($buffer);
+                return Protocol\ConnectionOpenOkFrame::unpack($buffer);
             case Constants::METHOD_CONNECTION_CLOSE:
-                return new Protocol\ConnectionCloseFrame($buffer);
+                return Protocol\ConnectionCloseFrame::unpack($buffer);
             case Constants::METHOD_CONNECTION_CLOSE_OK:
                 return new Protocol\ConnectionCloseOkFrame;
             case Constants::METHOD_CONNECTION_BLOCKED:
-                return new Protocol\ConnectionBlockedFrame($buffer);
+                return Protocol\ConnectionBlockedFrame::unpack($buffer);
             case Constants::METHOD_CONNECTION_UNBLOCKED:
                 return new Protocol\ConnectionUnblockedFrame;
             default:
@@ -224,15 +224,15 @@ class ProtocolReader
     {
         switch ($methodId) {
             case Constants::METHOD_CHANNEL_OPEN:
-                return new Protocol\ChannelOpenFrame($buffer);
+                return Protocol\ChannelOpenFrame::unpack($buffer);
             case Constants::METHOD_CHANNEL_OPEN_OK:
-                return new Protocol\ChannelOpenOkFrame($buffer);
+                return Protocol\ChannelOpenOkFrame::unpack($buffer);
             case Constants::METHOD_CHANNEL_FLOW:
-                return new Protocol\ChannelFlowFrame($buffer);
+                return Protocol\ChannelFlowFrame::unpack($buffer);
             case Constants::METHOD_CHANNEL_FLOW_OK:
-                return new Protocol\ChannelFlowOkFrame($buffer);
+                return Protocol\ChannelFlowOkFrame::unpack($buffer);
             case Constants::METHOD_CHANNEL_CLOSE:
-                return new Protocol\ChannelCloseFrame($buffer);
+                return Protocol\ChannelCloseFrame::unpack($buffer);
             case Constants::METHOD_CHANNEL_CLOSE_OK:
                 return new Protocol\ChannelCloseOkFrame;
             default:
@@ -250,19 +250,19 @@ class ProtocolReader
     {
         switch ($methodId) {
             case Constants::METHOD_EXCHANGE_DECLARE:
-                return new Protocol\ExchangeDeclareFrame($buffer);
+                return Protocol\ExchangeDeclareFrame::unpack($buffer);
             case Constants::METHOD_EXCHANGE_DECLARE_OK:
                 return new Protocol\ExchangeDeclareOkFrame;
             case Constants::METHOD_EXCHANGE_DELETE:
-                return new Protocol\ExchangeDeleteFrame($buffer);
+                return Protocol\ExchangeDeleteFrame::unpack($buffer);
             case Constants::METHOD_EXCHANGE_DELETE_OK:
                 return new Protocol\ExchangeDeleteOkFrame;
             case Constants::METHOD_EXCHANGE_BIND:
-                return new Protocol\ExchangeBindFrame($buffer);
+                return Protocol\ExchangeBindFrame::unpack($buffer);
             case Constants::METHOD_EXCHANGE_BIND_OK:
                 return new Protocol\ExchangeBindOkFrame;
             case Constants::METHOD_EXCHANGE_UNBIND:
-                return new Protocol\ExchangeUnbindFrame($buffer);
+                return Protocol\ExchangeUnbindFrame::unpack($buffer);
             case Constants::METHOD_EXCHANGE_UNBIND_OK:
                 return new Protocol\ExchangeUnbindOkFrame;
             default:
@@ -280,25 +280,25 @@ class ProtocolReader
     {
         switch ($methodId) {
             case Constants::METHOD_QUEUE_DECLARE:
-                return new Protocol\QueueDeclareFrame($buffer);
+                return Protocol\QueueDeclareFrame::unpack($buffer);
             case Constants::METHOD_QUEUE_DECLARE_OK:
-                return new Protocol\QueueDeclareOkFrame($buffer);
+                return Protocol\QueueDeclareOkFrame::unpack($buffer);
             case Constants::METHOD_QUEUE_BIND:
-                return new Protocol\QueueBindFrame($buffer);
+                return Protocol\QueueBindFrame::unpack($buffer);
             case Constants::METHOD_QUEUE_BIND_OK:
                 return new Protocol\QueueBindOkFrame;
             case Constants::METHOD_QUEUE_UNBIND:
-                return new Protocol\QueueUnbindFrame($buffer);
+                return Protocol\QueueUnbindFrame::unpack($buffer);
             case Constants::METHOD_QUEUE_UNBIND_OK:
                 return new Protocol\QueueUnbindOkFrame;
             case Constants::METHOD_QUEUE_PURGE:
-                return new Protocol\QueuePurgeFrame($buffer);
+                return Protocol\QueuePurgeFrame::unpack($buffer);
             case Constants::METHOD_QUEUE_PURGE_OK:
-                return new Protocol\QueuePurgeOkFrame($buffer);
+                return Protocol\QueuePurgeOkFrame::unpack($buffer);
             case Constants::METHOD_QUEUE_DELETE:
-                return new Protocol\QueueDeleteFrame($buffer);
+                return Protocol\QueueDeleteFrame::unpack($buffer);
             case Constants::METHOD_QUEUE_DELETE_OK:
-                return new Protocol\QueueDeleteOkFrame($buffer);
+                return Protocol\QueueDeleteOkFrame::unpack($buffer);
             default:
                 throw new Exception\MethodInvalid(Constants::CLASS_QUEUE, $methodId);
         }
@@ -314,9 +314,9 @@ class ProtocolReader
     {
         switch ($methodId) {
             case Constants::METHOD_ACCESS_REQUEST:
-                return new Protocol\AccessRequestFrame($buffer);
+                return Protocol\AccessRequestFrame::unpack($buffer);
             case Constants::METHOD_ACCESS_REQUEST_OK:
-                return new Protocol\AccessRequestOkFrame($buffer);
+                return Protocol\AccessRequestOkFrame::unpack($buffer);
             default:
                 throw new Exception\MethodInvalid(Constants::CLASS_ACCESS, $methodId);
         }
@@ -357,7 +357,7 @@ class ProtocolReader
     {
         switch ($methodId) {
             case Constants::METHOD_CONFIRM_SELECT:
-                return new Protocol\ConfirmSelectFrame($buffer);
+                return Protocol\ConfirmSelectFrame::unpack($buffer);
             case Constants::METHOD_CONFIRM_SELECT_OK:
                 return new Protocol\ConfirmSelectOkFrame;
             default:

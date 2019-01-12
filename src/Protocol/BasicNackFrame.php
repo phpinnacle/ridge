@@ -30,15 +30,35 @@ class BasicNackFrame extends MethodFrame
      */
     public $requeue = true;
     
-    /**
-     * @param Buffer $buffer
-     */
-    public function __construct(Buffer $buffer)
+    public function __construct()
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_NACK);
-
-        $this->deliveryTag = $buffer->consumeInt64();
-
-        [$this->multiple, $this->requeue] = $buffer->consumeBits(2);
+    }
+    
+    /**
+     * @param Buffer $buffer
+     *
+     * @return self
+     */
+    public static function unpack(Buffer $buffer): self
+    {
+        $self = new self;
+        $self->deliveryTag = $buffer->consumeInt64();
+    
+        [$self->multiple, $self->requeue] = $buffer->consumeBits(2);
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendInt64($this->deliveryTag);
+        $buffer->appendBits([$this->multiple, $this->requeue]);
+        
+        return $buffer;
     }
 }

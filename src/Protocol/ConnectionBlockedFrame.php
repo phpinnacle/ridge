@@ -19,15 +19,35 @@ class ConnectionBlockedFrame extends MethodFrame
      * @var string
      */
     public $reason = '';
+
+    public function __construct()
+    {
+        parent::__construct(Constants::CLASS_CONNECTION, Constants::METHOD_CONNECTION_BLOCKED);
+    
+        $this->channel = Constants::CONNECTION_CHANNEL;
+    }
     
     /**
      * @param Buffer $buffer
+     *
+     * @return self
      */
-    public function __construct(Buffer $buffer)
+    public static function unpack(Buffer $buffer): self
     {
-        parent::__construct(Constants::CLASS_CONNECTION, Constants::METHOD_CONNECTION_BLOCKED);
-
-        $this->channel = Constants::CONNECTION_CHANNEL;
-        $this->reason = $buffer->consumeString();
+        $self = new self;
+        $self->reason = $buffer->consumeString();
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendString($this->reason);
+        
+        return $buffer;
     }
 }

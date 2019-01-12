@@ -39,19 +39,43 @@ class ConnectionStartFrame extends MethodFrame
      * @var string
      */
     public $locales = 'en_US';
+    
+    public function __construct()
+    {
+        parent::__construct(Constants::CLASS_CONNECTION, Constants::METHOD_CONNECTION_START);
+    
+        $this->channel = Constants::CONNECTION_CHANNEL;
+    }
 
     /**
      * @param Buffer $buffer
+     *
+     * @return self
      */
-    public function __construct(Buffer $buffer)
+    public static function unpack(Buffer $buffer): self
     {
-        parent::__construct(Constants::CLASS_CONNECTION, Constants::METHOD_CONNECTION_START);
+        $self = new self;
+        $self->versionMajor     = $buffer->consumeUint8();
+        $self->versionMinor     = $buffer->consumeUint8();
+        $self->serverProperties = $buffer->consumeTable();
+        $self->mechanisms       = $buffer->consumeText();
+        $self->locales          = $buffer->consumeText();
+        
+        return $self;
+    }
 
-        $this->channel          = Constants::CONNECTION_CHANNEL;
-        $this->versionMajor     = $buffer->consumeUint8();
-        $this->versionMinor     = $buffer->consumeUint8();
-        $this->serverProperties = $buffer->consumeTable();
-        $this->mechanisms       = $buffer->consumeText();
-        $this->locales          = $buffer->consumeText();
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendUint8($this->versionMajor);
+        $buffer->appendUint8($this->versionMinor);
+        $buffer->appendTable($this->serverProperties);
+        $buffer->appendText($this->mechanisms);
+        $buffer->appendText($this->locales);
+        
+        return $buffer;
     }
 }

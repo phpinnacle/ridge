@@ -20,17 +20,40 @@ class BasicGetOkFrame extends MessageFrame
      */
     public $messageCount;
     
-    /**
-     * @param Buffer $buffer
-     */
-    public function __construct(Buffer $buffer)
+    public function __construct()
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_GET_OK);
-
-        $this->deliveryTag   = $buffer->consumeInt64();
-        [$this->redelivered] = $buffer->consumeBits(1);
-        $this->exchange      = $buffer->consumeString();
-        $this->routingKey    = $buffer->consumeString();
-        $this->messageCount  = $buffer->consumeInt32();
+    }
+    
+    /**
+     * @param Buffer $buffer
+     *
+     * @return self
+     */
+    public static function unpack(Buffer $buffer): self
+    {
+        $self = new self;
+        $self->deliveryTag   = $buffer->consumeInt64();
+        [$self->redelivered] = $buffer->consumeBits(1);
+        $self->exchange      = $buffer->consumeString();
+        $self->routingKey    = $buffer->consumeString();
+        $self->messageCount  = $buffer->consumeInt32();
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendInt64($this->deliveryTag);
+        $buffer->appendBits([$this->redelivered]);
+        $buffer->appendString($this->exchange);
+        $buffer->appendString($this->routingKey);
+        $buffer->appendInt32($this->messageCount);
+        
+        return $buffer;
     }
 }

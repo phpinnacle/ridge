@@ -24,15 +24,35 @@ class BasicCancelFrame extends MethodFrame
      * @var boolean
      */
     public $nowait = false;
+
+    public function __construct()
+    {
+        parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_CANCEL);
+    }
     
     /**
      * @param Buffer $buffer
+     *
+     * @return self
      */
-    public function __construct(Buffer $buffer)
+    public static function unpack(Buffer $buffer): self
     {
-        parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_CANCEL);
-
-        $this->consumerTag = $buffer->consumeString();
-        [$this->nowait]    = $buffer->consumeBits(1);
+        $self = new self;
+        $self->consumerTag = $buffer->consumeString();
+        [$self->nowait]    = $buffer->consumeBits(1);
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendString($this->consumerTag);
+        $buffer->appendBits([$this->nowait]);
+        
+        return $buffer;
     }
 }

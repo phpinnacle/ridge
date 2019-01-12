@@ -20,13 +20,32 @@ class QueueDeleteOkFrame extends MethodFrame
      */
     public $messageCount;
 
-    /**
-     * @param Buffer $buffer
-     */
-    public function __construct(Buffer $buffer)
+    public function __construct()
     {
         parent::__construct(Constants::CLASS_QUEUE, Constants::METHOD_QUEUE_DELETE_OK);
-
-        $this->messageCount = $buffer->consumeInt32();
+    }
+    
+    /**
+     * @param Buffer $buffer
+     *
+     * @return self
+     */
+    public static function unpack(Buffer $buffer): self
+    {
+        $self = new self;
+        $self->messageCount = $buffer->consumeInt32();
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendInt32($this->messageCount);
+        
+        return $buffer;
     }
 }

@@ -132,7 +132,7 @@ class ContentHeaderFrame extends AbstractFrame
      *
      * @return ContentHeaderFrame
      */
-    public static function buffer(Buffer $buffer): self
+    public static function unpack(Buffer $buffer): self
     {
         $self = new self;
 
@@ -199,113 +199,80 @@ class ContentHeaderFrame extends AbstractFrame
         
         return $self;
     }
-
+    
     /**
-     * @param array $headers
-     *
-     * @return self
+     * @return Buffer
      */
-    public static function fromArray(array $headers): self
+    public function pack(): Buffer
     {
-        $instance = new self;
-
-        if (isset($headers["content-type"])) {
-            $instance->flags |= self::FLAG_CONTENT_TYPE;
-            $instance->contentType = $headers["content-type"];
-
-            unset($headers["content-type"]);
+        $buffer = new Buffer;
+        $buffer
+            ->appendUint16($this->classId)
+            ->appendUint16($this->weight)
+            ->appendUint64($this->bodySize)
+        ;
+    
+        $flags = $this->flags;
+    
+        $buffer->appendUint16($flags);
+    
+        if ($flags & ContentHeaderFrame::FLAG_CONTENT_TYPE) {
+            $buffer->appendString($this->contentType);
         }
-
-        if (isset($headers["content-encoding"])) {
-            $instance->flags |= self::FLAG_CONTENT_ENCODING;
-            $instance->contentEncoding = $headers["content-encoding"];
-
-            unset($headers["content-encoding"]);
+    
+        if ($flags & ContentHeaderFrame::FLAG_CONTENT_ENCODING) {
+            $buffer->appendString($this->contentEncoding);
         }
-
-        if (isset($headers["delivery-mode"])) {
-            $instance->flags |= self::FLAG_DELIVERY_MODE;
-            $instance->deliveryMode = $headers["delivery-mode"];
-
-            unset($headers["delivery-mode"]);
+    
+        if ($flags & ContentHeaderFrame::FLAG_HEADERS) {
+            $buffer->appendTable($this->headers);
         }
-
-        if (isset($headers["priority"])) {
-            $instance->flags |= self::FLAG_PRIORITY;
-            $instance->priority = $headers["priority"];
-
-            unset($headers["priority"]);
+    
+        if ($flags & ContentHeaderFrame::FLAG_DELIVERY_MODE) {
+            $buffer->appendUint8($this->deliveryMode);
         }
-
-        if (isset($headers["correlation-id"])) {
-            $instance->flags |= self::FLAG_CORRELATION_ID;
-            $instance->correlationId = $headers["correlation-id"];
-
-            unset($headers["correlation-id"]);
+    
+        if ($flags & ContentHeaderFrame::FLAG_PRIORITY) {
+            $buffer->appendUint8($this->priority);
         }
-
-        if (isset($headers["reply-to"])) {
-            $instance->flags |= self::FLAG_REPLY_TO;
-            $instance->replyTo = $headers["reply-to"];
-
-            unset($headers["reply-to"]);
+    
+        if ($flags & ContentHeaderFrame::FLAG_CORRELATION_ID) {
+            $buffer->appendString($this->correlationId);
         }
-
-        if (isset($headers["expiration"])) {
-            $instance->flags |= self::FLAG_EXPIRATION;
-            $instance->expiration = $headers["expiration"];
-
-            unset($headers["expiration"]);
+    
+        if ($flags & ContentHeaderFrame::FLAG_REPLY_TO) {
+            $buffer->appendString($this->replyTo);
         }
-
-        if (isset($headers["message-id"])) {
-            $instance->flags |= self::FLAG_MESSAGE_ID;
-            $instance->messageId = $headers["message-id"];
-
-            unset($headers["message-id"]);
+    
+        if ($flags & ContentHeaderFrame::FLAG_EXPIRATION) {
+            $buffer->appendString($this->expiration);
         }
-
-        if (isset($headers["timestamp"])) {
-            $instance->flags |= self::FLAG_TIMESTAMP;
-            $instance->timestamp = $headers["timestamp"];
-
-            unset($headers["timestamp"]);
+    
+        if ($flags & ContentHeaderFrame::FLAG_MESSAGE_ID) {
+            $buffer->appendString($this->messageId);
         }
-
-        if (isset($headers["type"])) {
-            $instance->flags |= self::FLAG_TYPE;
-            $instance->typeHeader = $headers["type"];
-
-            unset($headers["type"]);
+    
+        if ($flags & ContentHeaderFrame::FLAG_TIMESTAMP) {
+            $buffer->appendTimestamp($this->timestamp);
         }
-
-        if (isset($headers["user-id"])) {
-            $instance->flags |= self::FLAG_USER_ID;
-            $instance->userId = $headers["user-id"];
-
-            unset($headers["user-id"]);
+    
+        if ($flags & ContentHeaderFrame::FLAG_TYPE) {
+            $buffer->appendString($this->typeHeader);
         }
-
-        if (isset($headers["app-id"])) {
-            $instance->flags |= self::FLAG_APP_ID;
-            $instance->appId = $headers["app-id"];
-
-            unset($headers["app-id"]);
+    
+        if ($flags & ContentHeaderFrame::FLAG_USER_ID) {
+            $buffer->appendString($this->userId);
         }
-
-        if (isset($headers["cluster-id"])) {
-            $instance->flags |= self::FLAG_CLUSTER_ID;
-            $instance->clusterId = $headers["cluster-id"];
-
-            unset($headers["cluster-id"]);
+    
+        if ($flags & ContentHeaderFrame::FLAG_APP_ID) {
+            $buffer->appendString($this->appId);
         }
-
-        if (!empty($headers)) {
-            $instance->flags |= self::FLAG_HEADERS;
-            $instance->headers = $headers;
+    
+        if ($flags & ContentHeaderFrame::FLAG_CLUSTER_ID) {
+            $buffer->appendString($this->clusterId);
         }
-
-        return $instance;
+    
+        return $buffer;
     }
 
     /**

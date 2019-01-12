@@ -25,14 +25,34 @@ class BasicAckFrame extends MethodFrame
      */
     public $multiple = false;
     
-    /**
-     * @param Buffer $buffer
-     */
-    public function __construct(Buffer $buffer)
+    public function __construct()
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_ACK);
+    }
     
-        $this->deliveryTag = $buffer->consumeInt64();
-        [$this->multiple]  = $buffer->consumeBits(1);
+    /**
+     * @param Buffer $buffer
+     *
+     * @return self
+     */
+    public static function unpack(Buffer $buffer): self
+    {
+        $self = new self;
+        $self->deliveryTag = $buffer->consumeInt64();
+        [$self->multiple]  = $buffer->consumeBits(1);
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendInt64($this->deliveryTag);
+        $buffer->appendBits([$this->multiple]);
+        
+        return $buffer;
     }
 }

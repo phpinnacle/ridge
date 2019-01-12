@@ -30,16 +30,36 @@ class BasicQosFrame extends MethodFrame
      */
     public $global = false;
     
-    /**
-     * @param Buffer $buffer
-     */
-    public function __construct(Buffer $buffer)
+    public function __construct()
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_QOS);
-
-        $this->prefetchSize  = $buffer->consumeInt32();
-        $this->prefetchCount = $buffer->consumeInt16();
-
-        [$this->global] = $buffer->consumeBits(1);
+    }
+    
+    /**
+     * @param Buffer $buffer
+     *
+     * @return self
+     */
+    public static function unpack(Buffer $buffer): self
+    {
+        $self = new self;
+        $self->prefetchSize  = $buffer->consumeInt32();
+        $self->prefetchCount = $buffer->consumeInt16();
+        [$self->global]      = $buffer->consumeBits(1);
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendInt32($this->prefetchSize);
+        $buffer->appendInt16($this->prefetchCount);
+        $buffer->appendBits([$this->global]);
+        
+        return $buffer;
     }
 }

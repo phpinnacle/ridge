@@ -981,96 +981,96 @@ final class Channel
             ->appendUint8(206)
         ;
 
-        $s = 14;
+        $size = 14;
 
         if (isset($headers['content-type'])) {
             $flags |= 32768;
             $contentType = $headers['content-type'];
-            $s += 1 + \strlen($contentType);
+            $size += 1 + \strlen($contentType);
             unset($headers['content-type']);
         }
 
         if (isset($headers['content-encoding'])) {
             $flags |= 16384;
             $contentEncoding = $headers['content-encoding'];
-            $s += 1 + \strlen($contentEncoding);
+            $size += 1 + \strlen($contentEncoding);
             unset($headers['content-encoding']);
         }
 
         if (isset($headers['delivery-mode'])) {
             $flags |= 4096;
             $deliveryMode = (int) $headers['delivery-mode'];
-            $s += 1;
+            $size += 1;
             unset($headers['delivery-mode']);
         }
 
         if (isset($headers['priority'])) {
             $flags |= 2048;
             $priority = (int) $headers['priority'];
-            $s += 1;
+            $size += 1;
             unset($headers['priority']);
         }
 
         if (isset($headers['correlation-id'])) {
             $flags |= 1024;
             $correlationId = $headers['correlation-id'];
-            $s += 1 + \strlen($correlationId);
+            $size += 1 + \strlen($correlationId);
             unset($headers['correlation-id']);
         }
 
         if (isset($headers['reply-to'])) {
             $flags |= 512;
             $replyTo = $headers['reply-to'];
-            $s += 1 + \strlen($replyTo);
+            $size += 1 + \strlen($replyTo);
             unset($headers['reply-to']);
         }
 
         if (isset($headers['expiration'])) {
             $flags |= 256;
             $expiration = $headers['expiration'];
-            $s += 1 + \strlen($expiration);
+            $size += 1 + \strlen($expiration);
             unset($headers['expiration']);
         }
 
         if (isset($headers['message-id'])) {
             $flags |= 128;
             $messageId = $headers['message-id'];
-            $s += 1 + \strlen($messageId);
+            $size += 1 + \strlen($messageId);
             unset($headers['message-id']);
         }
 
         if (isset($headers['timestamp'])) {
             $flags |= 64;
             $timestamp = $headers['timestamp'];
-            $s += 8;
+            $size += 8;
             unset($headers['timestamp']);
         }
 
         if (isset($headers['type'])) {
             $flags |= 32;
             $type = $headers['type'];
-            $s += 1 + \strlen($type);
+            $size += 1 + \strlen($type);
             unset($headers['type']);
         }
 
         if (isset($headers['user-id'])) {
             $flags |= 16;
             $userId = $headers['user-id'];
-            $s += 1 + \strlen($userId);
+            $size += 1 + \strlen($userId);
             unset($headers['user-id']);
         }
 
         if (isset($headers['app-id'])) {
             $flags |= 8;
             $appId = $headers['app-id'];
-            $s += 1 + \strlen($appId);
+            $size += 1 + \strlen($appId);
             unset($headers['app-id']);
         }
 
         if (isset($headers['cluster-id'])) {
             $flags |= 4;
             $clusterId = $headers['cluster-id'];
-            $s += 1 + \strlen($clusterId);
+            $size += 1 + \strlen($clusterId);
             unset($headers['cluster-id']);
         }
 
@@ -1078,13 +1078,13 @@ final class Channel
             $flags |= 8192;
             $headersBuffer = new Buffer;
             $headersBuffer->appendTable($headers);
-            $s += $headersBuffer->size();
+            $size += $headersBuffer->size();
         }
 
         $buffer
             ->appendUint8(2)
             ->appendUint16($this->id)
-            ->appendUint32($s)
+            ->appendUint32($size)
             ->appendUint16(60)
             ->appendUint16(0)
             ->appendUint64(\strlen($body))
@@ -1165,6 +1165,16 @@ final class Channel
 
         return $this->connection->write($buffer);
     }
+    
+    /**
+     * @param string $frame
+     *
+     * @return Promise<Protocol\AbstractFrame>
+     */
+    private function await(string $frame): Promise
+    {
+        return $this->connection->await($this->id, $frame);
+    }
 
     /**
      * @return void
@@ -1179,28 +1189,18 @@ final class Channel
 
         asyncCall(function () {
             while ($this->state === self::STATE_OPEN) {
-                /** @var Protocol\BasicDeliverFrame $deliver */
-                $deliver = yield $this->await(Protocol\BasicDeliverFrame::class);
+                /** @var Protocol\BasicDeliverFrame $frame */
+                $frame = yield $this->await(Protocol\BasicDeliverFrame::class);
 
-                if (!isset($this->callbacks[$deliver->consumerTag])) {
+                if (!isset($this->callbacks[$frame->consumerTag])) {
                     continue;
                 }
 
-                $message = yield $this->consumeMessage($deliver, $deliver->consumerTag);
+                $message = yield $this->consumeMessage($frame, $frame->consumerTag);
 
-                asyncCall($this->callbacks[$deliver->consumerTag], $message, $this);
+                asyncCall($this->callbacks[$frame->consumerTag], $message, $this);
             }
         });
-    }
-
-    /**
-     * @param string $frame
-     *
-     * @return Promise<Protocol\AbstractFrame>
-     */
-    private function await(string $frame): Promise
-    {
-        return $this->connection->await($this->id, $frame);
     }
 
     /**

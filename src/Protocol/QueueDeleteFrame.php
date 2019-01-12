@@ -40,16 +40,37 @@ class QueueDeleteFrame extends MethodFrame
      */
     public $nowait = false;
 
-    /**
-     * @param Buffer $buffer
-     */
-    public function __construct(Buffer $buffer)
+    public function __construct()
     {
         parent::__construct(Constants::CLASS_QUEUE, Constants::METHOD_QUEUE_DELETE);
-
-        $this->reserved1 = $buffer->consumeInt16();
-        $this->queue     = $buffer->consumeString();
-
-        [$this->ifUnused, $this->ifEmpty, $this->nowait] = $buffer->consumeBits(3);
+    }
+    
+    /**
+     * @param Buffer $buffer
+     *
+     * @return self
+     */
+    public static function unpack(Buffer $buffer): self
+    {
+        $self = new self;
+        $self->reserved1 = $buffer->consumeInt16();
+        $self->queue     = $buffer->consumeString();
+    
+        [$self->ifUnused, $self->ifEmpty, $self->nowait] = $buffer->consumeBits(3);
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendInt16($this->reserved1);
+        $buffer->appendString($this->queue);
+        $buffer->appendBits([$this->ifUnused, $this->ifEmpty, $this->nowait]);
+        
+        return $buffer;
     }
 }

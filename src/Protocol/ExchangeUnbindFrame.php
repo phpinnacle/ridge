@@ -45,18 +45,42 @@ class ExchangeUnbindFrame extends MethodFrame
      */
     public $arguments = [];
 
-    /**
-     * @param Buffer $buffer
-     */
-    public function __construct(Buffer $buffer)
+    public function __construct()
     {
         parent::__construct(Constants::CLASS_EXCHANGE, Constants::METHOD_EXCHANGE_UNBIND);
-
-        $this->reserved1   = $buffer->consumeInt16();
-        $this->destination = $buffer->consumeString();
-        $this->source      = $buffer->consumeString();
-        $this->routingKey  = $buffer->consumeString();
-        [$this->nowait]    = $buffer->consumeBits(1);
-        $this->arguments   = $buffer->consumeTable();
+    }
+    
+    /**
+     * @param Buffer $buffer
+     *
+     * @return self
+     */
+    public static function unpack(Buffer $buffer): self
+    {
+        $self = new self;
+        $self->reserved1   = $buffer->consumeInt16();
+        $self->destination = $buffer->consumeString();
+        $self->source      = $buffer->consumeString();
+        $self->routingKey  = $buffer->consumeString();
+        [$self->nowait]    = $buffer->consumeBits(1);
+        $self->arguments   = $buffer->consumeTable();
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendInt16($this->reserved1);
+        $buffer->appendString($this->destination);
+        $buffer->appendString($this->source);
+        $buffer->appendString($this->routingKey);
+        $buffer->appendBits([$this->nowait]);
+        $buffer->appendTable($this->arguments);
+        
+        return $buffer;
     }
 }

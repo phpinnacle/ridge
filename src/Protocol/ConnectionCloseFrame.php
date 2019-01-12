@@ -34,18 +34,41 @@ class ConnectionCloseFrame extends MethodFrame
      * @var int
      */
     public $closeMethodId;
+
+    public function __construct()
+    {
+        parent::__construct(Constants::CLASS_CONNECTION, Constants::METHOD_CONNECTION_CLOSE);
+    
+        $this->channel = Constants::CONNECTION_CHANNEL;
+    }
     
     /**
      * @param Buffer $buffer
+     *
+     * @return self
      */
-    public function __construct(Buffer $buffer)
+    public static function unpack(Buffer $buffer): self
     {
-        parent::__construct(Constants::CLASS_CONNECTION, Constants::METHOD_CONNECTION_CLOSE);
-
-        $this->channel       = Constants::CONNECTION_CHANNEL;
-        $this->replyCode     = $buffer->consumeInt16();
-        $this->replyText     = $buffer->consumeString();
-        $this->closeClassId  = $buffer->consumeInt16();
-        $this->closeMethodId = $buffer->consumeInt16();
+        $self = new self;
+        $self->replyCode     = $buffer->consumeInt16();
+        $self->replyText     = $buffer->consumeString();
+        $self->closeClassId  = $buffer->consumeInt16();
+        $self->closeMethodId = $buffer->consumeInt16();
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendInt16($this->replyCode);
+        $buffer->appendString($this->replyText);
+        $buffer->appendInt16($this->closeClassId);
+        $buffer->appendInt16($this->closeMethodId);
+        
+        return $buffer;
     }
 }

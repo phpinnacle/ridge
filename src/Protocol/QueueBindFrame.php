@@ -44,21 +44,44 @@ class QueueBindFrame extends MethodFrame
      * @var array
      */
     public $arguments = [];
-
-    /**
-     * @param Buffer $buffer
-     */
-    public function __construct(Buffer $buffer)
+    
+    public function __construct()
     {
         parent::__construct(Constants::CLASS_QUEUE, Constants::METHOD_QUEUE_BIND);
-
-        $this->reserved1  = $buffer->consumeInt16();
-        $this->queue      = $buffer->consumeString();
-        $this->exchange   = $buffer->consumeString();
-        $this->routingKey = $buffer->consumeString();
-
-        [$this->nowait] = $buffer->consumeBits(1);
-
-        $this->arguments = $buffer->consumeTable();
+        
+    }
+    
+    /**
+     * @param Buffer $buffer
+     *
+     * @return self
+     */
+    public static function unpack(Buffer $buffer): self
+    {
+        $self = new self;
+        $self->reserved1  = $buffer->consumeInt16();
+        $self->queue      = $buffer->consumeString();
+        $self->exchange   = $buffer->consumeString();
+        $self->routingKey = $buffer->consumeString();
+        [$self->nowait]   = $buffer->consumeBits(1);
+        $self->arguments  = $buffer->consumeTable();
+        
+        return $self;
+    }
+    
+    /**
+     * @return Buffer
+     */
+    public function pack(): Buffer
+    {
+        $buffer = parent::pack();
+        $buffer->appendInt16($this->reserved1);
+        $buffer->appendString($this->queue);
+        $buffer->appendString($this->exchange);
+        $buffer->appendString($this->routingKey);
+        $buffer->appendBits([$this->nowait]);
+        $buffer->appendTable($this->arguments);
+        
+        return $buffer;
     }
 }
