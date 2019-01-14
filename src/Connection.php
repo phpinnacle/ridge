@@ -14,8 +14,6 @@ namespace PHPinnacle\Ridge;
 
 use function Amp\asyncCall, Amp\call, Amp\Socket\connect;
 use Amp\Deferred;
-use Amp\Emitter;
-use Amp\Iterator;
 use Amp\Loop;
 use Amp\Promise;
 use Amp\Socket\ClientConnectContext;
@@ -43,7 +41,7 @@ final class Connection
     /**
      * @var Deferred[][][]
      */
-    private $await = [];
+    private $callbacks = [];
 
     /**
      * @var int
@@ -129,18 +127,13 @@ final class Connection
     }
 
     /**
-     * @param int    $channel
-     * @param string $frame
-     *
-     * @return Promise
+     * @param int      $channel
+     * @param string   $frame
+     * @param callable $callback
      */
-    public function await(int $channel, string $frame): Promise
+    public function subscribe(int $channel, string $frame, callable $callback): void
     {
-        $deferred = new Deferred;
-
-        $this->await[$channel][$frame][] = $deferred;
-
-        return $deferred->promise();
+        $this->callbacks[$channel][$frame][] = $callback;
     }
 
     /**
@@ -150,7 +143,7 @@ final class Connection
      */
     public function cancel(int $channel): void
     {
-        unset($this->await[$channel]);
+        unset($this->callbacks[$channel]);
     }
 
     /**
@@ -176,7 +169,17 @@ final class Connection
 
             asyncCall(function () {
                 while (null !== $chunk = yield $this->socket->read()) {
-                    $this->consume($chunk);
+                    $this->parser->append($chunk);
+
+                    while ($frame = $this->parser->parse()) {
+                        $class = \get_class($frame);
+
+                        foreach ($this->callbacks[$frame->channel][$class] ?? [] as $i => $callback) {
+                            if (yield call($callback, $frame)) {
+                                unset($this->callbacks[$frame->channel][$class][$i]);
+                            }
+                        }
+                    }
                 }
 
                 unset($this->socket);
@@ -229,29 +232,10 @@ final class Connection
             unset($this->heartbeat);
         }
 
-        $this->socket->close();
-
-        $this->await = [];
-    }
-
-    /**
-     * @param string $chunk
-     *
-     * @return void
-     */
-    private function consume(string $chunk): void
-    {
-        $this->parser->append($chunk);
-
-        while ($frame = $this->parser->parse()) {
-            $class  = \get_class($frame);
-            $defers = $this->await[$frame->channel][$class] ?? [];
-    
-            foreach ($defers as $i => $defer) {
-                $defer->resolve($frame);
-        
-                unset($this->await[$frame->channel][$class][$i]);
-            }
+        if ($this->socket !== null) {
+            $this->socket->close();
         }
+
+        $this->callbacks = [];
     }
 }
