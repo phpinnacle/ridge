@@ -14,6 +14,7 @@ namespace PHPinnacle\Ridge;
 
 use function Amp\asyncCall;
 use function Amp\call;
+use Amp\Deferred;
 use Amp\Promise;
 
 final class Client
@@ -104,7 +105,7 @@ final class Client
             yield $this->connectionOpen();
 
             asyncCall(function () {
-                yield $this->connection->await(0, Protocol\ConnectionCloseFrame::class);
+                yield $this->await(Protocol\ConnectionCloseFrame::class);
 
                 $buffer = new Buffer;
                 $buffer
@@ -182,8 +183,8 @@ final class Client
 
                 asyncCall(function () use ($id) {
                     $frame = yield Promise\first([
-                        $this->connection->await($id, Protocol\ChannelCloseFrame::class),
-                        $this->connection->await($id, Protocol\ChannelCloseOkFrame::class)
+                        $this->await(Protocol\ChannelCloseFrame::class, $id),
+                        $this->await(Protocol\ChannelCloseOkFrame::class, $id)
                     ]);
 
                     $this->connection->cancel($id);
@@ -227,7 +228,7 @@ final class Client
     {
         return call(function () {
             /** @var Protocol\ConnectionStartFrame $start */
-            $start = yield $this->connection->await(0, Protocol\ConnectionStartFrame::class);
+            $start = yield $this->await(Protocol\ConnectionStartFrame::class);
 
             if (\strpos($start->mechanisms, "AMQPLAIN") === false) {
                 throw new Exception\ClientException("Server does not support AMQPLAIN mechanism (supported: {$start->mechanisms}).");
@@ -263,7 +264,7 @@ final class Client
     {
         return call(function () {
             /** @var Protocol\ConnectionTuneFrame $tune */
-            $tune = yield $this->connection->await(0, Protocol\ConnectionTuneFrame::class);
+            $tune = yield $this->await(Protocol\ConnectionTuneFrame::class);
 
             $heartbeat = $this->config->heartbeat();
 
@@ -319,7 +320,7 @@ final class Client
 
             yield $this->connection->write($buffer);
 
-            return $this->connection->await(0, Protocol\ConnectionOpenOkFrame::class);
+            return $this->await(Protocol\ConnectionOpenOkFrame::class);
         });
     }
 
@@ -348,7 +349,7 @@ final class Client
 
             yield $this->connection->write($buffer);
 
-            return $this->connection->await(0, Protocol\ConnectionCloseOkFrame::class);
+            return $this->await(Protocol\ConnectionCloseOkFrame::class);
         });
     }
 
@@ -376,5 +377,24 @@ final class Client
         }
 
         throw new Exception\ClientException("No available channels");
+    }
+
+    /**
+     * @param string $frame
+     * @param int    $channel
+     *
+     * @return Promise
+     */
+    private function await(string $frame, int $channel = 0): Promise
+    {
+        $deferred = new Deferred;
+
+        $this->connection->subscribe($channel, $frame, function (Protocol\AbstractFrame $frame) use ($deferred) {
+            $deferred->resolve($frame);
+
+            return true;
+        });
+
+        return $deferred->promise();
     }
 }
