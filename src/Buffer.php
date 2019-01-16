@@ -12,608 +12,26 @@ declare(strict_types = 1);
 
 namespace PHPinnacle\Ridge;
 
-/**
- * Binary buffer implementation.
- *
- * Acts as queue:
- *
- * - read*() methods peeks from start.
- * - consume*() methods pops data from start.
- * - append*() methods add data to end.
- *
- * All integers are read from and written to buffer in big-endian order.
- */
-final class Buffer
+use PHPinnacle\Buffer\Binary;
+
+final class Buffer extends Binary
 {
     /**
-     * @var bool
+     * @param string $value
+     *
+     * @return static
      */
-    private static $isLittleEndian;
-
-    /**
-     * @var bool
-     */
-    private static $native64BitPack;
-
-    /**
-     * @var string
-     */
-    private $data;
-
-    /**
-     * @var int
-     */
-    private $size;
-
-    /**
-     * @param string $buffer
-     */
-    public function __construct(string $buffer = '')
+    public function appendString(string $value): self
     {
-        $this->data = $buffer;
-        $this->size = \strlen($this->data);
-
-        if (self::$native64BitPack === null) {
-            self::$native64BitPack = PHP_INT_SIZE === 8;
-            self::$isLittleEndian = \unpack("S", "\x01\x00")[1] === 1;
-        }
-    }
-
-    /**
-     * Returns number of bytes in buffer.
-     *
-     * @return int
-     */
-    public function size(): int
-    {
-        return $this->size;
-    }
-
-    /**
-     * Returns true if buffer is empty.
-     *
-     * @return boolean
-     */
-    public function empty(): bool
-    {
-        return $this->size === 0;
-    }
-
-    /**
-     * @return string
-     */
-    public function flush(): string
-    {
-        $data = $this->data;
-
-        $this->data = '';
-        $this->size = 0;
-
-        return $data;
-    }
-
-    /**
-     * Reads first $n bytes from $offset.
-     *
-     * @param int $n
-     * @param int $offset
-     *
-     * @return string
-     */
-    public function read(int $n, int $offset = 0): string
-    {
-        if ($this->size < $offset + $n) {
-            throw new Exception\BufferUnderflow;
-        } elseif ($offset === 0 && $this->size === $offset + $n) {
-            return $this->data;
-        } else {
-            return \substr($this->data, $offset, $n);
-        }
-    }
-
-    /**
-     * Reads first $n bytes from buffer and discards them.
-     *
-     * @param int $n
-     *
-     * @return string
-     */
-    public function consume(int $n): string
-    {
-        if ($this->size < $n) {
-            throw new Exception\BufferUnderflow;
-        } elseif ($this->size === $n) {
-            $buffer = $this->data;
-
-            $this->data = "";
-            $this->size = 0;
-
-            return $buffer;
-        } else {
-            $buffer = \substr($this->data, 0, $n);
-
-            $this->data = \substr($this->data, $n);
-            $this->size -= $n;
-
-            return $buffer;
-        }
-    }
-
-    /**
-     * Discards first $n bytes from buffer.
-     *
-     * @param int $n
-     *
-     * @return self
-     */
-    public function discard(int $n): self
-    {
-        if ($this->size < $n) {
-            throw new Exception\BufferUnderflow;
-        } elseif ($this->size === $n) {
-            $this->data = "";
-            $this->size = 0;
-
-            return $this;
-        } else {
-            $this->data = \substr($this->data, $n);
-            $this->size -= $n;
-
-            return $this;
-        }
-    }
-
-    /**
-     * Returns new buffer with first $n bytes.
-     *
-     * @param int $n
-     *
-     * @return self
-     */
-    public function slice(int $n): self
-    {
-        if ($this->size < $n) {
-            throw new Exception\BufferUnderflow;
-        } elseif ($this->size === $n) {
-            return new self($this->data);
-        } else {
-            return new self(\substr($this->data, 0, $n));
-        }
-    }
-
-    /**
-     * Returns new buffer with first $n bytes and discards them from current buffer.
-     *
-     * @param int $n
-     *
-     * @return self
-     */
-    public function consumeSlice(int $n): self
-    {
-        if ($this->size < $n) {
-            throw new Exception\BufferUnderflow;
-        } elseif ($this->size === $n) {
-            $buffer = $this->data;
-
-            $this->data = "";
-            $this->size = 0;
-
-            return new self($buffer);
-
-        } else {
-            $buffer = \substr($this->data, 0, $n);
-
-            $this->data = \substr($this->data, $n);
-            $this->size -= $n;
-
-            return new self($buffer);
-        }
-    }
-
-    /**
-     * Appends bytes at the end of the buffer.
-     *
-     * @param string|self $s
-     *
-     * @return self
-     */
-    public function append($s): self
-    {
-        if ($s instanceof Buffer) {
-            $s = $s->data;
-        }
-
-        $this->data .= $s;
-        $this->size += \strlen($s);
+        $this
+            ->appendUint8(\strlen($value))
+            ->append($value)
+        ;
 
         return $this;
     }
 
     /**
-     * Reads unsigned 8-bit integer from buffer.
-     *
-     * @param int $offset
-     *
-     * @return int
-     */
-    public function readUint8(int $offset = 0): int
-    {
-        [, $ret] = \unpack("C", $this->read(1, $offset));
-
-        return $ret;
-    }
-
-    /**
-     * Reads signed 8-bit integer from buffer.
-     *
-     * @param int $offset
-     *
-     * @return int
-     */
-    public function readInt8(int $offset = 0): int
-    {
-        [, $ret] = \unpack("c", $this->read(1, $offset));
-
-        return $ret;
-    }
-
-    /**
-     * Reads and discards unsigned 8-bit integer from buffer.
-     *
-     * @return int
-     */
-    public function consumeUint8(): int
-    {
-        [, $ret] = \unpack("C", $this->data);
-
-        $this->discard(1);
-
-        return $ret;
-    }
-
-    /**
-     * Reads and discards signed 8-bit integer from buffer.
-     *
-     * @return int
-     */
-    public function consumeInt8(): int
-    {
-        [, $ret] = \unpack("c", $this->consume(1));
-
-        return $ret;
-    }
-
-    /**
-     * Appends unsigned 8-bit integer to buffer.
-     *
-     * @param int $value
-     *
-     * @return self
-     */
-    public function appendUint8(int $value): self
-    {
-        return $this->append(\pack("C", $value));
-    }
-
-    /**
-     * Appends signed 8-bit integer to buffer.
-     *
-     * @param int $value
-     *
-     * @return self
-     */
-    public function appendInt8(int $value): self
-    {
-        return $this->append(\pack("c", $value));
-    }
-
-    /**
-     * Reads unsigned 16-bit integer from buffer.
-     *
-     * @param int $offset
-     *
-     * @return int
-     */
-    public function readUint16(int $offset = 0): int
-    {
-        [, $ret] = \unpack("n", $this->read(2, $offset));
-
-        return $ret;
-    }
-
-    /**
-     * Reads signed 16-bit integer from buffer.
-     *
-     * @param int $offset
-     *
-     * @return int
-     */
-    public function readInt16(int $offset = 0): int
-    {
-        $s = $this->read(2, $offset);
-
-        [, $ret] = \unpack("s", self::$isLittleEndian ? self::swapEndian16($s) : $s);
-
-        return $ret;
-    }
-
-    /**
-     * Reads and discards unsigned 16-bit integer from buffer.
-     *
-     * @return int
-     */
-    public function consumeUint16(): int
-    {
-        [, $ret] = \unpack("n", $this->data);
-
-        $this->discard(2);
-
-        return $ret;
-    }
-
-    /**
-     * Reads and discards signed 16-bit integer from buffer.
-     *
-     * @return int
-     */
-    public function consumeInt16(): int
-    {
-        $s = $this->consume(2);
-
-        [, $ret] = \unpack("s", self::$isLittleEndian ? self::swapEndian16($s) : $s);
-
-        return $ret;
-    }
-
-    /**
-     * Appends unsigned 16-bit integer to buffer.
-     *
-     * @param int $value
-     *
-     * @return self
-     */
-    public function appendUint16(int $value): self
-    {
-        return $this->append(\pack("n", $value));
-    }
-
-    /**
-     * Appends signed 16-bit integer to buffer.
-     *
-     * @param int $value
-     *
-     * @return self
-     */
-    public function appendInt16(int $value): self
-    {
-        $s = \pack("s", $value);
-
-        return $this->append(self::$isLittleEndian ? self::swapEndian16($s) : $s);
-    }
-
-    /**
-     * Reads unsigned 32-bit integer from buffer.
-     *
-     * @param int $offset
-     *
-     * @return int
-     */
-    public function readUint32(int $offset = 0): int
-    {
-        $s = $this->read(4, $offset);
-
-        [, $ret] = \unpack("N", $s);
-
-        return $ret;
-    }
-
-    /**
-     * Reads signed 32-bit integer from buffer.
-     *
-     * @param int $offset
-     *
-     * @return int
-     */
-    public function readInt32(int $offset = 0): int
-    {
-        $s = $this->read(4, $offset);
-
-        [, $ret] = \unpack("l", self::$isLittleEndian ? self::swapEndian32($s) : $s);
-
-        return $ret;
-    }
-
-    /**
-     * Reads and discards unsigned 32-bit integer from buffer.
-     *
-     * @return int
-     */
-    public function consumeUint32(): int
-    {
-        [, $ret] = unpack("N", $this->data);
-
-        $this->discard(4);
-
-        return $ret;
-    }
-
-    /**
-     * Reads and discards signed 32-bit integer from buffer.
-     *
-     * @return int
-     */
-    public function consumeInt32(): int
-    {
-        $s = $this->consume(4);
-
-        [, $ret] = \unpack("l", self::$isLittleEndian ? self::swapEndian32($s) : $s);
-
-        return $ret;
-    }
-
-    /**
-     * Appends unsigned 32-bit integer to buffer.
-     *
-     * @param int $value
-     *
-     * @return self
-     */
-    public function appendUint32(int $value): self
-    {
-        $s = \pack("N", $value);
-
-        return $this->append($s);
-    }
-
-    /**
-     * Appends signed 32-bit integer to buffer.
-     *
-     * @param int $value
-     *
-     * @return self
-     */
-    public function appendInt32(int $value): self
-    {
-        $s = \pack("l", $value);
-
-        return $this->append(self::$isLittleEndian ? self::swapEndian32($s) : $s);
-    }
-
-    /**
-     * Reads unsigned 64-bit integer from buffer.
-     *
-     * @param int $offset
-     *
-     * @return int
-     */
-    public function readUint64(int $offset = 0): int
-    {
-        $s = $this->read(8, $offset);
-
-        if (self::$native64BitPack) {
-            [, $ret] = \unpack("Q", self::$isLittleEndian ? self::swapEndian64($s) : $s);
-        } else {
-            $d = \unpack("Lh/Ll", self::$isLittleEndian ? self::swapHalvedEndian64($s) : $s);
-            $ret = $d["h"] << 32 | $d["l"];
-        }
-
-        return $ret;
-    }
-
-    /**
-     * Reads signed 64-bit integer from buffer.
-     *
-     * @param int $offset
-     *
-     * @return int
-     */
-    public function readInt64(int $offset = 0): int
-    {
-        $s = $this->read(8, $offset);
-
-        if (self::$native64BitPack) {
-            [, $ret] = \unpack("q", self::$isLittleEndian ? self::swapEndian64($s) : $s);
-        } else {
-            $d = \unpack("Lh/Ll", self::$isLittleEndian ? self::swapHalvedEndian64($s) : $s);
-            $ret = $d["h"] << 32 | $d["l"];
-        }
-
-        return $ret;
-    }
-
-    /**
-     * Reads and discards unsigned 64-bit integer from buffer.
-     *
-     * @return int
-     */
-    public function consumeUint64(): int
-    {
-        $s = $this->consume(8);
-
-        if (self::$native64BitPack) {
-            [, $ret] = \unpack("Q", self::$isLittleEndian ? self::swapEndian64($s) : $s);
-        } else {
-            $d = \unpack("Lh/Ll", self::$isLittleEndian ? self::swapHalvedEndian64($s) : $s);
-            $ret = $d["h"] << 32 | $d["l"];
-        }
-
-        return $ret;
-    }
-
-    /**
-     * Reads and discards signed 64-bit integer from buffer.
-     *
-     * @return int
-     */
-    public function consumeInt64(): int
-    {
-        $s = $this->consume(8);
-
-        if (self::$native64BitPack) {
-            [, $ret] = \unpack("q", self::$isLittleEndian ? self::swapEndian64($s) : $s);
-        } else {
-            $d = \unpack("Lh/Ll", self::$isLittleEndian ? self::swapHalvedEndian64($s) : $s);
-            $ret = $d["h"] << 32 | $d["l"];
-        }
-
-        return $ret;
-    }
-
-    /**
-     * Appends unsigned 64-bit integer to buffer.
-     *
-     * @param int $value
-     *
-     * @return self
-     */
-    public function appendUint64(int $value): self
-    {
-        if (self::$native64BitPack) {
-            $s = \pack("Q", $value);
-
-            if (self::$isLittleEndian) {
-                $s = self::swapEndian64($s);
-            }
-        } else {
-            $s = \pack("LL", ($value & 0xffffffff00000000) >> 32, $value & 0x00000000ffffffff);
-
-            if (self::$isLittleEndian) {
-                $s = self::swapHalvedEndian64($s);
-            }
-        }
-
-        return $this->append($s);
-    }
-
-    /**
-     * Appends signed 64-bit integer to buffer.
-     *
-     * @param int $value
-     *
-     * @return self
-     */
-    public function appendInt64(int $value): self
-    {
-        if (self::$native64BitPack) {
-            $s = \pack("q", $value);
-
-            if (self::$isLittleEndian) {
-                $s = self::swapEndian64($s);
-            }
-        } else {
-            $s = \pack("LL", ($value & 0xffffffff00000000) >> 32, $value & 0x00000000ffffffff);
-
-            if (self::$isLittleEndian) {
-                $s = self::swapHalvedEndian64($s);
-            }
-        }
-
-        return $this->append($s);
-    }
-
-    /**
-     * Reads and discards string from buffer.
-     *
      * @return string
      */
     public function consumeString(): string
@@ -622,23 +40,21 @@ final class Buffer
     }
 
     /**
-     * Appends string to buffer.
-     *
      * @param string $value
      *
      * @return self
      */
-    public function appendString(string $value): self
+    public function appendText(string $value): self
     {
-        return $this
-            ->appendUint8(\strlen($value))
+        $this
+            ->appendUint32(\strlen($value))
             ->append($value)
         ;
+
+        return $this;
     }
 
     /**
-     * Reads and discards text from buffer.
-     *
      * @return string
      */
     public function consumeText(): string
@@ -647,111 +63,25 @@ final class Buffer
     }
 
     /**
-     * Appends text to buffer.
-     *
-     * @param string $value
+     * @param array $bits
      *
      * @return self
      */
-    public function appendText(string $value): self
+    public function appendBits(array $bits): self
     {
-        return $this
-            ->appendUint32(\strlen($value))
-            ->append($value)
-        ;
+        $value = 0;
+
+        foreach ($bits as $n => $bit) {
+            $bit = $bit ? 1 : 0;
+            $value |= $bit << $n;
+        }
+
+        $this->appendUint8($value);
+
+        return $this;
     }
 
     /**
-     * Reads float from buffer.
-     *
-     * @param int $offset
-     *
-     * @return float
-     */
-    public function readFloat(int $offset = 0): float
-    {
-        $s = $this->read(4, $offset);
-
-        [, $ret] = \unpack("f", self::$isLittleEndian ? self::swapEndian32($s) : $s);
-
-        return $ret;
-    }
-
-    /**
-     * Reads and discards float from buffer.
-     *
-     * @return float
-     */
-    public function consumeFloat(): float
-    {
-        $s = $this->consume(4);
-
-        [, $ret] = \unpack("f", self::$isLittleEndian ? self::swapEndian32($s) : $s);
-
-        return $ret;
-    }
-
-    /**
-     * Appends float to buffer.
-     *
-     * @param float $value
-     *
-     * @return self
-     */
-    public function appendFloat(float $value): self
-    {
-        $s = \pack("f", $value);
-
-        return $this->append(self::$isLittleEndian ? self::swapEndian32($s) : $s);
-    }
-
-    /**
-     * Reads double from buffer.
-     *
-     * @param int $offset
-     *
-     * @return float
-     */
-    public function readDouble(int $offset = 0): float
-    {
-        $s = $this->read(8, $offset);
-
-        [, $ret] = \unpack("d", self::$isLittleEndian ? self::swapEndian64($s) : $s);
-
-        return $ret;
-    }
-
-    /**
-     * Reads and discards double from buffer.
-     *
-     * @return float
-     */
-    public function consumeDouble(): float
-    {
-        $s = $this->consume(8);
-
-        [, $ret] = \unpack("d", self::$isLittleEndian ? self::swapEndian64($s) : $s);
-
-        return $ret;
-    }
-
-    /**
-     * Appends double to buffer.
-     *
-     * @param float $value
-     * 
-     * @return self
-     */
-    public function appendDouble($value): self
-    {
-        $s = \pack("d", $value);
-
-        return $this->append(self::$isLittleEndian ? self::swapEndian64($s) : $s);
-    }
-
-    /**
-     * Consumes packed bits from buffer.
-     *
      * @param int $n
      *
      * @return bool[]
@@ -769,57 +99,57 @@ final class Buffer
     }
 
     /**
-     * Appends packed bits to buffer.
-     *
-     * @param array $bits
-     *
-     * @return self
-     */
-    public function appendBits(array $bits): self
-    {
-        $value = 0;
-
-        foreach ($bits as $n => $bit) {
-            $bit = $bit ? 1 : 0;
-            $value |= $bit << $n;
-        }
-
-        return $this->appendUint8($value);
-    }
-
-    /**
-     * @noinspection PhpDocMissingThrowsInspection
-     *
-     * Consumes AMQP timestamp from buffer.
-     *
-     * @return \DateTimeInterface
-     */
-    public function consumeTimestamp(): \DateTimeInterface
-    {
-        /** @noinspection PhpUnhandledExceptionInspection */
-        $d = (new \DateTimeImmutable)->setTimestamp($this->consumeUint64());
-
-        return $d;
-    }
-
-    /**
      * @param \DateTimeInterface $value
      *
      * @return self
      */
     public function appendTimestamp(\DateTimeInterface $value): self
     {
-        return $this->appendUint64($value->getTimestamp());
+        $this->appendUint64($value->getTimestamp());
+
+        return $this;
     }
 
     /**
-     * Consumes AMQP table from buffer.
+     * @noinspection PhpDocMissingThrowsInspection
      *
+     * @return \DateTimeInterface
+     */
+    public function consumeTimestamp(): \DateTimeInterface
+    {
+        /** @noinspection PhpUnhandledExceptionInspection */
+        return (new \DateTimeImmutable)->setTimestamp($this->consumeUint64());
+    }
+
+    /**
+     * @param array $table
+     *
+     * @return self
+     */
+    public function appendTable(array $table): self
+    {
+        $buffer = new static;
+
+        foreach ($table as $k => $v) {
+            $buffer->appendUint8(\strlen($k));
+            $buffer->append($k);
+            $buffer->appendValue($v);
+        }
+
+        $this
+            ->appendUint32($buffer->size())
+            ->append($buffer)
+        ;
+
+        return $this;
+    }
+
+    /**
      * @return array
      */
     public function consumeTable(): array
     {
-        $buffer = $this->consumeSlice($this->consumeUint32());
+        $buffer = $this->shift($this->consumeUint32());
         $data = [];
 
         while (!$buffer->empty()) {
@@ -830,35 +160,32 @@ final class Buffer
     }
 
     /**
-     * Appends AMQP table to buffer.
-     *
-     * @param array $table
+     * @param array $value
      *
      * @return self
      */
-    public function appendTable(array $table): self
+    public function appendArray(array $value): self
     {
-        $buffer = new self;
+        $buffer = new static;
 
-        foreach ($table as $k => $v) {
-            $buffer->appendUint8(\strlen($k));
-            $buffer->append($k);
+        foreach ($value as $v) {
             $buffer->appendValue($v);
         }
 
-        $this->appendUint32($buffer->size());
+        $this
+            ->appendUint32($buffer->size())
+            ->append($buffer)
+        ;
 
-        return $this->append($buffer);
+        return $this;
     }
 
     /**
-     * Consumes AMQP array from buffer.
-     *
      * @return array
      */
     public function consumeArray(): array
     {
-        $buffer = $this->consumeSlice($this->consumeUint32());
+        $buffer = $this->shift($this->consumeUint32());
         $data = [];
 
         while (!$buffer->empty()) {
@@ -869,28 +196,6 @@ final class Buffer
     }
 
     /**
-     * Appends AMQP array to buffer.
-     *
-     * @param array $value
-     *
-     * @return self
-     */
-    public function appendArray(array $value): self
-    {
-        $buffer = new self;
-
-        foreach ($value as $v) {
-            $buffer->appendValue($v);
-        }
-
-        $this->appendUint32($buffer->size());
-
-        return $this->append($buffer);
-    }
-
-    /**
-     * Consumes AMQP decimal value.
-     *
      * @return int
      */
     public function consumeDecimal(): int
@@ -902,16 +207,6 @@ final class Buffer
     }
 
     /**
-     * @return string
-     */
-    public function __toString(): string
-    {
-        return $this->data;
-    }
-
-    /**
-     * Consumes AMQP table/array field value.
-     *
      * @return mixed
      * @throws Exception\ProtocolException
      */
@@ -962,8 +257,6 @@ final class Buffer
     }
 
     /**
-     * Appends AMQP table/array field value to buffer.
-     *
      * @param mixed  $value
      */
     private function appendValue($value)
@@ -996,53 +289,5 @@ final class Buffer
         } else {
             throw Exception\ProtocolException::unknownValueType($value);
         }
-    }
-
-    /**
-     * Swaps 16-bit integer endianness.
-     *
-     * @param string $s
-     *
-     * @return string
-     */
-    private static function swapEndian16(string $s): string
-    {
-        return $s[1] . $s[0];
-    }
-
-    /**
-     * Swaps 32-bit integer endianness.
-     *
-     * @param string $s
-     *
-     * @return string
-     */
-    private static function swapEndian32(string $s): string
-    {
-        return $s[3] . $s[2] . $s[1] . $s[0];
-    }
-
-    /**
-     * Swaps 64-bit integer endianness.
-     *
-     * @param string $s
-     *
-     * @return string
-     */
-    private static function swapEndian64(string $s): string
-    {
-        return $s[7] . $s[6] . $s[5] . $s[4] . $s[3] . $s[2] . $s[1] . $s[0];
-    }
-
-    /**
-     * Swaps 64-bit integer endianness so integer can be read/written as two 32-bit integers.
-     *
-     * @param string $s
-     *
-     * @return string
-     */
-    private static function swapHalvedEndian64(string $s): string
-    {
-        return $s[3] . $s[2] . $s[1] . $s[0] . $s[7] . $s[6] . $s[5] . $s[4];
     }
 }

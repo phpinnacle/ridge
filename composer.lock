@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f54332bace22103628bfa9c68e9fa358",
+    "content-hash": "c7e35ec0a5bd207188d41e6fad81295c",
     "packages": [
         {
             "name": "amphp/amp",
@@ -747,6 +747,61 @@
                 "dns"
             ],
             "time": "2018-01-10T15:56:17+00:00"
+        },
+        {
+            "name": "phpinnacle/buffer",
+            "version": "0.1.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/phpinnacle/buffer.git",
+                "reference": "c23a21a0e86b6f5f3bd8f6b7ac4b42ce88a7693d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/phpinnacle/buffer/zipball/c23a21a0e86b6f5f3bd8f6b7ac4b42ce88a7693d",
+                "reference": "c23a21a0e86b6f5f3bd8f6b7ac4b42ce88a7693d",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.1"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^6.0"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.0-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "PHPinnacle\\Buffer\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "PHPinnacle",
+                    "email": "dev@phpinnacle.com",
+                    "homepage": "https://phpinnacle.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "PHPinnacle binary buffer implementation",
+            "homepage": "https://github.com/phpinnacle/buffer",
+            "keywords": [
+                "Buffer",
+                "binary",
+                "binary data",
+                "pack",
+                "phpinnacle",
+                "unpack"
+            ],
+            "time": "2019-01-16T11:18:23+00:00"
         }
     ],
     "packages-dev": [
