@@ -283,55 +283,55 @@ class ContentHeaderFrame extends AbstractFrame
         $headers = $this->headers ?: [];
 
         if ($this->contentType !== null) {
-            $headers["content-type"] = $this->contentType;
+            $headers['content-type'] = $this->contentType;
         }
 
         if ($this->contentEncoding !== null) {
-            $headers["content-encoding"] = $this->contentEncoding;
+            $headers['content-encoding'] = $this->contentEncoding;
         }
 
         if ($this->deliveryMode !== null) {
-            $headers["delivery-mode"] = $this->deliveryMode;
+            $headers['delivery-mode'] = $this->deliveryMode;
         }
 
         if ($this->priority !== null) {
-            $headers["priority"] = $this->priority;
+            $headers['priority'] = $this->priority;
         }
 
         if ($this->correlationId !== null) {
-            $headers["correlation-id"] = $this->correlationId;
+            $headers['correlation-id'] = $this->correlationId;
         }
 
         if ($this->replyTo !== null) {
-            $headers["reply-to"] = $this->replyTo;
+            $headers['reply-to'] = $this->replyTo;
         }
 
         if ($this->expiration !== null) {
-            $headers["expiration"] = $this->expiration;
+            $headers['expiration'] = $this->expiration;
         }
 
         if ($this->messageId !== null) {
-            $headers["message-id"] = $this->messageId;
+            $headers['message-id'] = $this->messageId;
         }
 
         if ($this->timestamp !== null) {
-            $headers["timestamp"] = $this->timestamp;
+            $headers['timestamp'] = $this->timestamp;
         }
 
         if ($this->typeHeader !== null) {
-            $headers["type"] = $this->typeHeader;
+            $headers['type'] = $this->typeHeader;
         }
 
         if ($this->userId !== null) {
-            $headers["user-id"] = $this->userId;
+            $headers['user-id'] = $this->userId;
         }
 
         if ($this->appId !== null) {
-            $headers["app-id"] = $this->appId;
+            $headers['app-id'] = $this->appId;
         }
 
         if ($this->clusterId !== null) {
-            $headers["cluster-id"] = $this->clusterId;
+            $headers['cluster-id'] = $this->clusterId;
         }
 
         return $headers;
