@@ -73,6 +73,14 @@ final class Consumer
     }
 
     /**
+     * @return void
+     */
+    public function stop(): void
+    {
+        $this->callbacks = [];
+    }
+
+    /**
      * @param Protocol\BasicDeliverFrame $frame
      *
      * @return void

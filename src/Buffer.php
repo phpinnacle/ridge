@@ -131,6 +131,8 @@ final class Buffer extends Binary
         $buffer = new static;
 
         foreach ($table as $k => $v) {
+            $k = (string) $k;
+
             $buffer->appendUint8(\strlen($k));
             $buffer->append($k);
             $buffer->appendValue($v);
@@ -203,7 +205,7 @@ final class Buffer extends Binary
         $scale = $this->consumeUint8();
         $value = $this->consumeUint32();
 
-        return $value * \pow(10, $scale);
+        return $value * (10 ** $scale);
     }
 
     /**
@@ -237,7 +239,7 @@ final class Buffer extends Binary
                 return $this->consumeFloat();
             case Constants::FIELD_DOUBLE:
                 return $this->consumeDouble();
-            case Constants::FIELD_DECIMAL_VALUE:
+            case Constants::FIELD_DECIMAL:
                 return $this->consumeDecimal();
             case Constants::FIELD_SHORT_STRING:
                 return $this->consume($this->consumeUint8());

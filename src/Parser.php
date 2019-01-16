@@ -117,8 +117,6 @@ class Parser
                 return $this->consumeQueueFrame($methodId, $buffer);
             case Constants::CLASS_TX:
                 return $this->consumeTxFrame($methodId);
-            case Constants::CLASS_ACCESS:
-                return $this->consumeAccessFrame($methodId, $buffer);
             case Constants::CLASS_CONFIRM:
                 return $this->consumeConfirmFrame($methodId, $buffer);
             default:
@@ -301,24 +299,6 @@ class Parser
                 return Protocol\QueueDeleteOkFrame::unpack($buffer);
             default:
                 throw new Exception\MethodInvalid(Constants::CLASS_QUEUE, $methodId);
-        }
-    }
-    
-    /**
-     * @param int    $methodId
-     * @param Buffer $buffer
-     *
-     * @return Protocol\MethodFrame
-     */
-    private function consumeAccessFrame(int $methodId, Buffer $buffer): Protocol\MethodFrame
-    {
-        switch ($methodId) {
-            case Constants::METHOD_ACCESS_REQUEST:
-                return Protocol\AccessRequestFrame::unpack($buffer);
-            case Constants::METHOD_ACCESS_REQUEST_OK:
-                return Protocol\AccessRequestOkFrame::unpack($buffer);
-            default:
-                throw new Exception\MethodInvalid(Constants::CLASS_ACCESS, $methodId);
         }
     }
     

@@ -61,7 +61,7 @@ final class Message
     public function __construct(
         string $content,
         string $exchange,
-        string $routingKey = null,
+        string $routingKey,
         string $consumerTag = null,
         int $deliveryTag = null,
         bool $redelivered = false,
@@ -103,7 +103,7 @@ final class Message
     /**
      * @return string
      */
-    public function consumerTag(): string
+    public function consumerTag(): ?string
     {
         return $this->consumerTag;
     }
@@ -111,7 +111,7 @@ final class Message
     /**
      * @return int
      */
-    public function deliveryTag(): int
+    public function deliveryTag(): ?int
     {
         return $this->deliveryTag;
     }

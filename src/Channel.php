@@ -43,9 +43,9 @@ final class Channel
     private $connection;
 
     /**
-     * @var int
+     * @var Settings
      */
-    private $frameMax;
+    private $settings;
 
     /**
      * @var int
@@ -70,13 +70,14 @@ final class Channel
     /**
      * @param int        $id
      * @param Connection $connection
-     * @param int        $frameMax
+     * @param Settings   $settings
      */
-    public function __construct(int $id, Connection $connection, int $frameMax)
+    public function __construct(int $id, Connection $connection, Settings $settings)
     {
         $this->id         = $id;
         $this->connection = $connection;
-        $this->frameMax   = $frameMax;
+        $this->settings   = $settings;
+        $this->consumer   = new Consumer($this);
 
     }
 
@@ -117,10 +118,6 @@ final class Channel
     }
 
     /**
-     * Closes channel.
-     *
-     * Always returns a promise, because there can be outstanding messages to be processed.
-     *
      * @param int    $code
      * @param string $reason
      * 
@@ -139,6 +136,8 @@ final class Channel
 
             $this->state = self::STATE_CLOSING;
 
+            $this->consumer->stop();
+
             yield $this->connection->write((new Buffer)
                 ->appendUint8(1)
                 ->appendUint16($this->id)
@@ -155,44 +154,6 @@ final class Channel
             yield $this->await(Protocol\ChannelCloseOkFrame::class);
 
             $this->state = self::STATE_CLOSED;
-        });
-    }
-
-    /**
-     * @param string $realm
-     * @param bool   $exclusive
-     * @param bool   $passive
-     * @param bool   $active
-     * @param bool   $write
-     * @param bool   $read
-     *
-     * @return Promise<Protocol\AccessRequestOkFrame>
-     */
-    public function accessRequest
-    (
-        string $realm = '/data',
-        bool $exclusive = false,
-        bool $passive = true,
-        bool $active = true,
-        bool $write = true,
-        bool $read = true
-    ): Promise
-    {
-        $flags = [$exclusive, $passive, $active, $write, $read];
-
-        return call (function () use ($realm, $flags) {
-            yield $this->connection->write((new Buffer)
-                ->appendUint8(1)
-                ->appendUint16($this->id)
-                ->appendUint32(6 + \strlen($realm))
-                ->appendUint16(30)
-                ->appendUint16(10)
-                ->appendString($realm)
-                ->appendBits($flags)
-                ->appendUint8(206)
-            );
-
-            return $this->await(Protocol\AccessRequestOkFrame::class);
         });
     }
 
@@ -223,8 +184,6 @@ final class Channel
     }
 
     /**
-     * Creates new consumer on channel.
-     *
      * @param callable $callback
      * @param string   $queue
      * @param string   $consumerTag
@@ -234,7 +193,7 @@ final class Channel
      * @param bool     $noWait
      * @param array    $arguments
      *
-     * @return Promise<Protocol\BasicConsumeOkFrame>
+     * @return Promise<bool|Protocol\BasicConsumeOkFrame>
      */
     public function consume
     (
@@ -250,8 +209,8 @@ final class Channel
     {
         $flags = [$noLocal, $noAck, $exclusive, $noWait];
 
-        return call(function () use ($callback, $queue, $consumerTag, $flags, $arguments) {
-            yield $this->connection->method($this->id, 60, 20, (new Buffer)
+        return call(function () use ($callback, $queue, $consumerTag, $flags, $noWait, $arguments) {
+            $result = (bool) yield $this->connection->method($this->id, 60, 20, (new Buffer)
                 ->appendUint16(60)
                 ->appendUint16(20)
                 ->appendInt16(0)
@@ -261,20 +220,22 @@ final class Channel
                 ->appendTable($arguments)
             );
 
-            /** @var Protocol\BasicConsumeOkFrame $frame */
-            $frame = yield $this->await(Protocol\BasicConsumeOkFrame::class);
+            if ($noWait === false) {
+                /** @var Protocol\BasicConsumeOkFrame $result */
+                $result = yield $this->await(Protocol\BasicConsumeOkFrame::class);
+
+                $consumerTag = $result->consumerTag;
+            }
 
             $this->startConsuming();
 
-            $this->consumer->listen($frame->consumerTag, $callback);
+            $this->consumer->listen($consumerTag, $callback);
 
-            return $frame;
+            return $result;
         });
     }
 
     /**
-     * Cancels given consumer subscription.
-     *
      * @param string $consumerTag
      * @param bool   $noWait
      *
@@ -283,7 +244,7 @@ final class Channel
     public function cancel(string $consumerTag, bool $noWait = false): Promise
     {
         return call(function () use ($consumerTag, $noWait) {
-            $result = yield $this->connection->write((new Buffer)
+            $result = (bool) yield $this->connection->write((new Buffer)
                 ->appendUint8(1)
                 ->appendUint16($this->id)
                 ->appendUint32(6 + \strlen($consumerTag))
@@ -305,94 +266,105 @@ final class Channel
     }
 
     /**
-     * Acks given message.
-     *
      * @param Message $message
      * @param bool    $multiple
      *
-     * @return Promise<boolean>
+     * @return Promise<bool>
      */
     public function ack(Message $message, bool $multiple = false): Promise
     {
-        return $this->connection->write((new Buffer)
-            ->appendUint8(1)
-            ->appendUint16($this->id)
-            ->appendUint32(13)
-            ->appendUint16(60)
-            ->appendUint16(80)
-            ->appendInt64($message->deliveryTag())
-            ->appendBits([$multiple])
-            ->appendUint8(206)
-        );
+        return call(function () use ($message, $multiple) {
+            $result = yield $this->connection->write((new Buffer)
+                ->appendUint8(1)
+                ->appendUint16($this->id)
+                ->appendUint32(13)
+                ->appendUint16(60)
+                ->appendUint16(80)
+                ->appendInt64($message->deliveryTag())
+                ->appendBits([$multiple])
+                ->appendUint8(206)
+            );
+
+            return (bool) $result;
+        });
     }
 
     /**
-     * Nacks given message.
-     *
      * @param Message $message
      * @param bool    $multiple
      * @param bool    $requeue
      *
-     * @return Promise<boolean>
+     * @return Promise<bool>
      */
     public function nack(Message $message, bool $multiple = false, bool $requeue = true): Promise
     {
-        return $this->connection->write((new Buffer)
-            ->appendUint8(1)
-            ->appendUint16($this->id)
-            ->appendUint32(13)
-            ->appendUint16(60)
-            ->appendUint16(120)
-            ->appendInt64($message->deliveryTag())
-            ->appendBits([$multiple, $requeue])
-            ->appendUint8(206)
-        );
+        return call(function () use ($message, $multiple, $requeue) {
+            $result = yield $this->connection->write((new Buffer)
+                ->appendUint8(1)
+                ->appendUint16($this->id)
+                ->appendUint32(13)
+                ->appendUint16(60)
+                ->appendUint16(120)
+                ->appendInt64($message->deliveryTag())
+                ->appendBits([$multiple, $requeue])
+                ->appendUint8(206)
+            );
+
+            return (bool) $result;
+        });
     }
 
     /**
-     * Rejects given message.
-     *
      * @param Message $message
      * @param bool    $requeue
      *
-     * @return Promise<boolean>
+     * @return Promise<bool>
      */
     public function reject(Message $message, bool $requeue = true): Promise
     {
-        return $this->connection->write((new Buffer)
-            ->appendUint8(1)
-            ->appendUint16($this->id)
-            ->appendUint32(13)
-            ->appendUint16(60)
-            ->appendUint16(90)
-            ->appendInt64($message->deliveryTag())
-            ->appendBits([$requeue])
-            ->appendUint8(206)
-        );
+        return call(function () use ($message, $requeue) {
+            $result = $this->connection->write((new Buffer)
+                ->appendUint8(1)
+                ->appendUint16($this->id)
+                ->appendUint32(13)
+                ->appendUint16(60)
+                ->appendUint16(90)
+                ->appendInt64($message->deliveryTag())
+                ->appendBits([$requeue])
+                ->appendUint8(206)
+            );
+
+            return (bool) $result;
+        });
     }
 
     /**
      * @param bool $requeue
      *
-     * @return Promise<bool>
+     * @return Promise<Protocol\BasicRecoverOkFrame>
      */
     public function recover(bool $requeue = false): Promise
     {
-        return $this->connection->write((new Buffer)
-            ->appendUint8(1)
-            ->appendUint16($this->id)
-            ->appendUint32(5)
-            ->appendUint16(60)
-            ->appendUint16(110)
-            ->appendBits([$requeue])
-            ->appendUint8(206)
-        );
+        return call(function () use ($requeue) {
+            $this->connection->write((new Buffer)
+                ->appendUint8(1)
+                ->appendUint16($this->id)
+                ->appendUint32(5)
+                ->appendUint16(60)
+                ->appendUint16(110)
+                ->appendBits([$requeue])
+                ->appendUint8(206)
+            );
+
+            return $this->await(Protocol\BasicRecoverOkFrame::class);
+        });
     }
 
     /**
      * @param bool $requeue
      *
      * @return Promise<bool>
+     * @deprecated This method is deprecated in favour of the synchronous Recover/Recover-Ok.
      */
     public function recoverAsync(bool $requeue = false): Promise
     {
@@ -408,8 +380,6 @@ final class Channel
     }
 
     /**
-     * Returns message if there is any waiting in the queue.
-     *
      * @param string $queue
      * @param bool   $noAck
      *
@@ -485,8 +455,6 @@ final class Channel
     }
 
     /**
-     * Published message to given exchange.
-     *
      * @param string $body
      * @param string $exchange
      * @param string $routingKey
@@ -514,8 +482,6 @@ final class Channel
     }
 
     /**
-     * Changes channel to transactional mode. All messages are published to queues only after {@link txCommit()} is called.
-     *
      * @return Promise<Protocol\TxSelectOkFrame>
      */
     public function txSelect(): Promise
@@ -543,8 +509,6 @@ final class Channel
     }
 
     /**
-     * Commit transaction.
-     *
      * @return Promise<Protocol\TxCommitOkFrame>
      */
     public function txCommit(): Promise
@@ -568,8 +532,6 @@ final class Channel
     }
 
     /**
-     * Rollback transaction.
-     *
      * @return Promise<Protocol\TxRollbackOkFrame>
      */
     public function txRollback(): Promise
@@ -593,8 +555,6 @@ final class Channel
     }
 
     /**
-     * Changes channel to confirm mode. Broker then asynchronously sends 'basic.ack's for published messages.
-     *
      * @param bool $noWait
      *
      * @return Promise<bool|Protocol\ConfirmSelectOkFrame>
@@ -606,7 +566,7 @@ final class Channel
                 throw new Exception\ChannelException("Channel not in regular mode, cannot change to transactional mode.");
             }
 
-            $result = yield $this->connection->write((new Buffer)
+            $result = (bool) yield $this->connection->write((new Buffer)
                 ->appendUint8(1)
                 ->appendUint16($this->id)
                 ->appendUint32(5)
@@ -664,7 +624,7 @@ final class Channel
 
             $result = yield $this->connection->method($this->id, 50, 10, $buffer);
 
-            return $noWait ? $result : $this->await(Protocol\QueueDeclareOkFrame::class);
+            return $noWait ? (bool) $result : $this->await(Protocol\QueueDeclareOkFrame::class);
         });
     }
 
@@ -701,7 +661,7 @@ final class Channel
 
             $result = yield $this->connection->method($this->id, 50, 20, $buffer);
 
-            return $noWait ? $result : $this->await(Protocol\QueueBindOkFrame::class);
+            return $noWait ? (bool) $result : $this->await(Protocol\QueueBindOkFrame::class);
         });
     }
 
@@ -763,7 +723,7 @@ final class Channel
 
             $result = yield $this->connection->write($buffer);
 
-            return $noWait ? $result : $this->await(Protocol\QueuePurgeOkFrame::class);
+            return $noWait ? (bool) $result : $this->await(Protocol\QueuePurgeOkFrame::class);
         });
     }
 
@@ -801,7 +761,7 @@ final class Channel
 
             $result = yield $this->connection->write($buffer);
 
-            return $noWait ? $result : $this->await(Protocol\QueueDeleteOkFrame::class);
+            return $noWait ? (bool) $result : $this->await(Protocol\QueueDeleteOkFrame::class);
         });
     }
 
@@ -845,7 +805,7 @@ final class Channel
 
             $result = yield $this->connection->method($this->id, 40, 10, $buffer);
 
-            return $noWait ? $result : $this->await(Protocol\ExchangeDeclareOkFrame::class);
+            return $noWait ? (bool) $result : $this->await(Protocol\ExchangeDeclareOkFrame::class);
         });
     }
 
@@ -882,7 +842,7 @@ final class Channel
 
             $result = yield $this->connection->method($this->id, 40, 30, $buffer);
 
-            return $noWait ? $result : $this->await(Protocol\ExchangeBindOkFrame::class);
+            return $noWait ? (bool) $result : $this->await(Protocol\ExchangeBindOkFrame::class);
         });
     }
 
@@ -919,7 +879,7 @@ final class Channel
 
             $result = yield $this->connection->method($this->id, 40, 40, $buffer);
 
-            return $noWait ? $result : $this->await(Protocol\ExchangeUnbindOkFrame::class);
+            return $noWait ? (bool) $result : $this->await(Protocol\ExchangeUnbindOkFrame::class);
         });
     }
 
@@ -948,7 +908,7 @@ final class Channel
 
             $result = yield $this->connection->write($buffer);
 
-            return $noWait ? $result : $this->await(Protocol\ExchangeDeleteOkFrame::class);
+            return $noWait ? (bool) $result : $this->await(Protocol\ExchangeDeleteOkFrame::class);
         });
     }
 
@@ -1173,7 +1133,7 @@ final class Channel
         $buffer->appendUint8(206);
 
         if (!empty($body)) {
-            $chunks = \str_split($body, $this->frameMax);
+            $chunks = \str_split($body, $this->settings->maxFrame());
 
             foreach ($chunks as $chunk) {
                 $buffer
@@ -1212,12 +1172,6 @@ final class Channel
      */
     private function startConsuming(): void
     {
-        if ($this->consumer !== null) {
-            return;
-        }
-
-        $this->consumer = new Consumer($this);
-
         $this->connection->subscribe($this->id, Protocol\BasicDeliverFrame::class, [$this->consumer, 'onDeliver']);
         $this->connection->subscribe($this->id, Protocol\ContentHeaderFrame::class, [$this->consumer, 'onHeader']);
         $this->connection->subscribe($this->id, Protocol\ContentBodyFrame::class, [$this->consumer, 'onBody']);

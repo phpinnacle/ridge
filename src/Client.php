@@ -174,7 +174,7 @@ final class Client
 
             try {
                 $id = $this->findChannelId();
-                $channel = new Channel($id, $this->connection, $this->config->maxFrame());
+                $channel = new Channel($id, $this->connection, new Settings($this->config->maxFrame()));
 
                 $this->channels[$id] = $channel;
 
@@ -296,24 +296,24 @@ final class Client
     }
 
     /**
-     * @param string $virtualHost
-     * @param string $capabilities
-     * @param bool   $insist
-     *
      * @return Promise<Protocol\ConnectionOpenOkFrame>
      */
-    private function connectionOpen(string $virtualHost = '/', string $capabilities = '', bool $insist = false): Promise
+    private function connectionOpen(): Promise
     {
-        return call(function () use ($virtualHost, $capabilities, $insist) {
+        return call(function () {
+            $vhost = $this->config->vhost();
+            $capabilities = '';
+            $insist = false;
+
             $buffer = new Buffer;
             $buffer
                 ->appendUint8(1)
                 ->appendUint16(0)
-                ->appendUint32(7 + \strlen($virtualHost) + \strlen($capabilities))
+                ->appendUint32(7 + \strlen($vhost) + \strlen($capabilities))
                 ->appendUint16(10)
                 ->appendUint16(40)
-                ->appendString($virtualHost)
-                ->appendString($capabilities)
+                ->appendString($vhost)
+                ->appendString($capabilities) // TODO: process server capabilities
                 ->appendBits([$insist])
                 ->appendUint8(206)
             ;
