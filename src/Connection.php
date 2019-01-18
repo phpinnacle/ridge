@@ -67,7 +67,7 @@ final class Connection
      *
      * @param Buffer $payload
      *
-     * @return Promise
+     * @return Promise<int>
      */
     public function write(Buffer $payload): Promise
     {
@@ -80,7 +80,7 @@ final class Connection
     /**
      * @param Protocol\AbstractFrame $frame
      *
-     * @return Promise
+     * @return Promise<int>
      */
     public function send(Protocol\AbstractFrame $frame): Promise
     {
@@ -114,7 +114,7 @@ final class Connection
      * @param int    $method
      * @param Buffer $payload
      *
-     * @return Promise
+     * @return Promise<int>
      */
     public function method(int $channel, int $class, int $method, Buffer $payload): Promise
     {
@@ -226,16 +226,14 @@ final class Connection
      */
     public function close(): void
     {
+        $this->callbacks = [];
+
         if ($this->heartbeat !== null) {
             Loop::cancel($this->heartbeat);
 
             unset($this->heartbeat);
         }
 
-        if ($this->socket !== null) {
-            $this->socket->close();
-        }
-
-        $this->callbacks = [];
+        $this->socket->close();
     }
 }

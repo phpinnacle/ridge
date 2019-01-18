@@ -10,7 +10,6 @@
 
 namespace PHPinnacle\Ridge\Tests;
 
-use Amp\Deferred;
 use Amp\Loop;
 use PHPinnacle\Ridge\Channel;
 use PHPinnacle\Ridge\Client;
@@ -70,9 +69,6 @@ class ClientTest extends RidgeTest
         });
     }
 
-    /**
-     * @group failing
-     */
     public function testOpenMultipleChannel()
     {
         self::loop(function (Client $client) {
@@ -98,19 +94,15 @@ class ClientTest extends RidgeTest
 
     public function testDisconnectWithBufferedMessages()
     {
-        self::loop(function () {
-            $client = self::client();
-            $count  = 0;
-
-            yield $client->connect();
-
+        self::loop(function (Client $client) {
             /** @var Channel $channel */
-            $channel  = yield $client->channel();
+            $channel = yield $client->channel();
+            $count   = 0;
 
             yield $channel->qos(0, 1000);
             yield $channel->queueDeclare('disconnect_test', false, false, false, true);
             yield $channel->consume(function (Message $message, Channel $channel) use ($client, &$count) {
-                $channel->ack($message);
+                yield $channel->ack($message);
 
                 self::assertEquals(1, ++$count);
 

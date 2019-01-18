@@ -157,7 +157,7 @@ final class Constants
         FIELD_LONG_LONG_UINT   = 0x6C, // 'l'
         FIELD_FLOAT            = 0x66, // 'f'
         FIELD_DOUBLE           = 0x64, // 'd'
-        FIELD_DECIMAL_VALUE    = 0x44, // 'D'
+        FIELD_DECIMAL          = 0x44, // 'D'
         FIELD_SHORT_STRING     = 0x73, // 's'
         FIELD_LONG_STRING      = 0x53, // 'S'
         FIELD_ARRAY            = 0x41, // 'A'

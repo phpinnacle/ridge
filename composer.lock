@@ -750,16 +750,16 @@
         },
         {
             "name": "phpinnacle/buffer",
-            "version": "0.1.1",
+            "version": "0.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpinnacle/buffer.git",
-                "reference": "c23a21a0e86b6f5f3bd8f6b7ac4b42ce88a7693d"
+                "reference": "a3b662cc90ac9ca81219626f8d2e7a15f096bc60"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpinnacle/buffer/zipball/c23a21a0e86b6f5f3bd8f6b7ac4b42ce88a7693d",
-                "reference": "c23a21a0e86b6f5f3bd8f6b7ac4b42ce88a7693d",
+                "url": "https://api.github.com/repos/phpinnacle/buffer/zipball/a3b662cc90ac9ca81219626f8d2e7a15f096bc60",
+                "reference": "a3b662cc90ac9ca81219626f8d2e7a15f096bc60",
                 "shasum": ""
             },
             "require": {
@@ -801,7 +801,7 @@
                 "phpinnacle",
                 "unpack"
             ],
-            "time": "2019-01-16T11:18:23+00:00"
+            "time": "2019-01-16T13:38:21+00:00"
         }
     ],
     "packages-dev": [
