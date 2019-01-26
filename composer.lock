@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c7e35ec0a5bd207188d41e6fad81295c",
+    "content-hash": "a28dbb1d0cfc81d28a0b1703ff3ef3fd",
     "packages": [
         {
             "name": "amphp/amp",
@@ -447,16 +447,16 @@
         },
         {
             "name": "amphp/process",
-            "version": "v1.0.2",
+            "version": "v1.0.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/amphp/process.git",
-                "reference": "90f3f31cbd0eee7fa5ae03ce588b1fc8f122997c"
+                "reference": "e7e28219da753f865f9055e87d0b9b110ea607ba"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/amphp/process/zipball/90f3f31cbd0eee7fa5ae03ce588b1fc8f122997c",
-                "reference": "90f3f31cbd0eee7fa5ae03ce588b1fc8f122997c",
+                "url": "https://api.github.com/repos/amphp/process/zipball/e7e28219da753f865f9055e87d0b9b110ea607ba",
+                "reference": "e7e28219da753f865f9055e87d0b9b110ea607ba",
                 "shasum": ""
             },
             "require": {
@@ -498,7 +498,7 @@
             ],
             "description": "Asynchronous process manager.",
             "homepage": "https://github.com/amphp/process",
-            "time": "2018-11-09T00:02:00+00:00"
+            "time": "2019-01-15T21:42:43+00:00"
         },
         {
             "name": "amphp/socket",
