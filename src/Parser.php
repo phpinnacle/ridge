@@ -10,7 +10,7 @@
 
 namespace PHPinnacle\Ridge;
 
-class Parser
+final class Parser
 {
     /**
      * @var Buffer

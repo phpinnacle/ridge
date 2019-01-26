@@ -2,13 +2,19 @@
 <phpunit bootstrap="vendor/autoload.php"
          backupGlobals="false"
          backupStaticAttributes="false"
+         beStrictAboutTestsThatDoNotTestAnything="false"
          colors="true"
          verbose="true"
          convertErrorsToExceptions="true"
          convertNoticesToExceptions="true"
          convertWarningsToExceptions="true"
-         processIsolation="false"
+         failOnRisky="true"
+         failOnWarning="true"
          stopOnFailure="false">
+    <php>
+        <ini name="error_reporting" value="-1"/>
+        <env name="RIDGE_TEST_DSN" value="amqp://guest:guest@localhost:5672"/>
+    </php>
     <testsuites>
         <testsuite name="PHPinnacle Test Suite">
             <directory>tests</directory>
@@ -16,7 +22,11 @@
     </testsuites>
     <filter>
         <whitelist>
-            <directory suffix=".php">src/</directory>
+            <directory>./</directory>
+            <exclude>
+                <directory>./tests</directory>
+                <directory>./vendor</directory>
+            </exclude>
         </whitelist>
     </filter>
     <listeners>
@@ -27,6 +37,6 @@
         <log type="junit" target="build/report.junit.xml"/>
         <log type="coverage-html" target="build/coverage" charset="UTF-8" yui="true" highlight="true"/>
         <log type="coverage-text" target="build/coverage.txt"/>
-        <log type="coverage-clover" target="build/logs/clover.xml"/>
+        <log type="coverage-clover" target="build/clover.xml"/>
     </logging>
 </phpunit>
