@@ -224,7 +224,9 @@ final class Channel
                 /** @var Protocol\BasicConsumeOkFrame $result */
                 $result = yield $this->await(Protocol\BasicConsumeOkFrame::class);
 
-                $consumerTag = $result->consumerTag;
+                if('' === $consumerTag) {
+                    $consumerTag = $result->consumerTag;
+                }
             }
 
             $this->startConsuming();

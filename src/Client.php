@@ -83,8 +83,10 @@ final class Client
 
             $this->connection = new Connection($this->config->uri());
 
+            $timeout = $this->config->timeout() * 1000;
+
             yield $this->connection->open(
-                $this->config->timeout(),
+                $timeout,
                 $this->config->tcpAttempts(),
                 $this->config->tcpNoDelay()
             );
