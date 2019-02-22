@@ -183,7 +183,7 @@ final class Connection
                     }
                 }
 
-                unset($this->socket);
+                $this->socket = null;
             });
         });
     }
@@ -198,7 +198,7 @@ final class Connection
         $milliseconds = $interval * 1000;
 
         $this->heartbeat = Loop::repeat($milliseconds, function($watcher) use ($milliseconds) {
-            if (false === isset($this->socket)) {
+            if (null === $this->socket) {
                 Loop::cancel($watcher);
 
                 return;
