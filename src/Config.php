@@ -218,7 +218,7 @@ final class Config
      */
     public function timeout(int $value = null): int
     {
-        return \is_null($value) || 0 === $value ? $this->timeout : $this->timeout = $value;
+        return \is_null($value) ? $this->timeout : $this->timeout = $value;
     }
 
     /**

@@ -88,7 +88,7 @@ final class Connection
             // payload already supplied
         } elseif ($frame instanceof MethodFrame || $frame instanceof ContentHeaderFrame) {
             $buffer = $frame->pack();
-        
+
             $frame->size    = $buffer->size();
             $frame->payload = $buffer;
         } elseif ($frame instanceof Protocol\ContentBodyFrame) {
@@ -156,10 +156,11 @@ final class Connection
     public function open(int $timeout, int $maxAttempts, bool $noDelay): Promise
     {
         return call(function () use ($timeout, $maxAttempts, $noDelay) {
-            $context = (new ClientConnectContext)
-                ->withConnectTimeout($timeout)
-                ->withMaxAttempts($maxAttempts)
-            ;
+            $context = (new ClientConnectContext)->withMaxAttempts($maxAttempts);
+
+            if($timeout > 0) {
+                $context = $context->withConnectTimeout($timeout);
+            }
 
             if ($noDelay) {
                 $context->withTcpNoDelay();
