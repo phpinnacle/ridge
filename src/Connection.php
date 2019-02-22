@@ -197,7 +197,7 @@ final class Connection
         $milliseconds = $interval * 1000;
 
         $this->heartbeat = Loop::repeat($milliseconds, function($watcher) use ($milliseconds) {
-            if (!$this->socket) {
+            if (false === isset($this->socket)) {
                 Loop::cancel($watcher);
 
                 return;
