@@ -255,7 +255,7 @@ final class Client
                 ->appendString("en_US")
             ;
 
-            return $this->connection->method(0, 10, 11, $frameBuffer);
+            return $this->connection->method(0, $frameBuffer);
         });
     }
 

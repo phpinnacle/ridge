@@ -33,7 +33,7 @@ class MethodFrame extends AbstractFrame
     {
         parent::__construct(Constants::FRAME_METHOD);
 
-        $this->classId = $classId;
+        $this->classId  = $classId;
         $this->methodId = $methodId;
     }
 

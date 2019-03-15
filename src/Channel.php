@@ -210,7 +210,8 @@ final class Channel
         $flags = [$noLocal, $noAck, $exclusive, $noWait];
 
         return call(function () use ($callback, $queue, $consumerTag, $flags, $noWait, $arguments) {
-            $result = (bool) yield $this->connection->method($this->id, 60, 20, (new Buffer)
+            $buffer = new Buffer;
+            $buffer
                 ->appendUint16(60)
                 ->appendUint16(20)
                 ->appendInt16(0)
@@ -218,13 +219,15 @@ final class Channel
                 ->appendString($consumerTag)
                 ->appendBits($flags)
                 ->appendTable($arguments)
-            );
+            ;
+
+            $result = (bool) yield $this->connection->method($this->id, $buffer);
 
             if ($noWait === false) {
                 /** @var Protocol\BasicConsumeOkFrame $result */
                 $result = yield $this->await(Protocol\BasicConsumeOkFrame::class);
 
-                if('' === $consumerTag) {
+                if ('' === $consumerTag) {
                     $consumerTag = $result->consumerTag;
                 }
             }
@@ -624,7 +627,7 @@ final class Channel
                 ->appendTable($arguments)
             ;
 
-            $result = yield $this->connection->method($this->id, 50, 10, $buffer);
+            $result = yield $this->connection->method($this->id, $buffer);
 
             return $noWait ? (bool) $result : $this->await(Protocol\QueueDeclareOkFrame::class);
         });
@@ -661,7 +664,7 @@ final class Channel
                 ->appendTable($arguments)
             ;
 
-            $result = yield $this->connection->method($this->id, 50, 20, $buffer);
+            $result = yield $this->connection->method($this->id, $buffer);
 
             return $noWait ? (bool) $result : $this->await(Protocol\QueueBindOkFrame::class);
         });
@@ -695,7 +698,7 @@ final class Channel
                 ->appendTable($arguments)
             ;
 
-            yield $this->connection->method($this->id, 50, 50, $buffer);
+            yield $this->connection->method($this->id, $buffer);
 
             return $this->await(Protocol\QueueUnbindOkFrame::class);
         });
@@ -805,7 +808,7 @@ final class Channel
                 ->appendTable($arguments)
             ;
 
-            $result = yield $this->connection->method($this->id, 40, 10, $buffer);
+            $result = yield $this->connection->method($this->id, $buffer);
 
             return $noWait ? (bool) $result : $this->await(Protocol\ExchangeDeclareOkFrame::class);
         });
@@ -842,7 +845,7 @@ final class Channel
                 ->appendTable($arguments)
             ;
 
-            $result = yield $this->connection->method($this->id, 40, 30, $buffer);
+            $result = yield $this->connection->method($this->id, $buffer);
 
             return $noWait ? (bool) $result : $this->await(Protocol\ExchangeBindOkFrame::class);
         });
@@ -879,7 +882,7 @@ final class Channel
                 ->appendTable($arguments)
             ;
 
-            $result = yield $this->connection->method($this->id, 40, 40, $buffer);
+            $result = yield $this->connection->method($this->id, $buffer);
 
             return $noWait ? (bool) $result : $this->await(Protocol\ExchangeUnbindOkFrame::class);
         });
