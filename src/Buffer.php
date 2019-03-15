@@ -12,9 +12,9 @@ declare(strict_types = 1);
 
 namespace PHPinnacle\Ridge;
 
-use PHPinnacle\Buffer\Binary;
+use PHPinnacle\Buffer\ByteBuffer;
 
-final class Buffer extends Binary
+final class Buffer extends ByteBuffer
 {
     /**
      * @param string $value

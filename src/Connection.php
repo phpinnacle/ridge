@@ -18,8 +18,6 @@ use Amp\Loop;
 use Amp\Promise;
 use Amp\Socket\ClientConnectContext;
 use Amp\Socket\Socket;
-use PHPinnacle\Ridge\Protocol\ContentHeaderFrame;
-use PHPinnacle\Ridge\Protocol\MethodFrame;
 
 final class Connection
 {
@@ -78,52 +76,20 @@ final class Connection
     }
 
     /**
-     * @param Protocol\AbstractFrame $frame
-     *
-     * @return Promise<int>
-     */
-    public function send(Protocol\AbstractFrame $frame): Promise
-    {
-        if ($frame instanceof MethodFrame && $frame->payload !== null) {
-            // payload already supplied
-        } elseif ($frame instanceof MethodFrame || $frame instanceof ContentHeaderFrame) {
-            $buffer = $frame->pack();
-
-            $frame->size    = $buffer->size();
-            $frame->payload = $buffer;
-        } elseif ($frame instanceof Protocol\ContentBodyFrame) {
-            // body frame's payload is already loaded
-        } elseif ($frame instanceof Protocol\HeartbeatFrame) {
-            // heartbeat frame is empty
-        } else {
-            throw Exception\ProtocolException::unknownFrameClass($frame);
-        }
-
-        return $this->write((new Buffer)
-            ->appendUint8($frame->type)
-            ->appendUint16($frame->channel)
-            ->appendUint32($frame->size)
-            ->append($frame->payload)
-            ->appendUint8(206)
-        );
-    }
-
-    /**
      * @param int    $channel
-     * @param int    $class
-     * @param int    $method
      * @param Buffer $payload
      *
      * @return Promise<int>
      */
-    public function method(int $channel, int $class, int $method, Buffer $payload): Promise
+    public function method(int $channel, Buffer $payload): Promise
     {
-        $frame = new Protocol\MethodFrame($class, $method);
-        $frame->channel = $channel;
-        $frame->payload = $payload;
-        $frame->size    = $payload->size();
-
-        return $this->send($frame);
+        return $this->write((new Buffer)
+            ->appendUint8(1)
+            ->appendUint16($channel)
+            ->appendUint32($payload->size())
+            ->append($payload)
+            ->appendUint8(206)
+        );
     }
 
     /**
@@ -156,14 +122,18 @@ final class Connection
     public function open(int $timeout, int $maxAttempts, bool $noDelay): Promise
     {
         return call(function () use ($timeout, $maxAttempts, $noDelay) {
-            $context = (new ClientConnectContext)->withMaxAttempts($maxAttempts);
+            $context = new ClientConnectContext;
 
-            if($timeout > 0) {
+            if ($maxAttempts > 0) {
+                $context = $context->withMaxAttempts($maxAttempts);
+            }
+
+            if ($timeout > 0) {
                 $context = $context->withConnectTimeout($timeout);
             }
 
             if ($noDelay) {
-                $context->withTcpNoDelay();
+                $context = $context->withTcpNoDelay();
             }
 
             $this->socket = yield connect($this->uri, $context);
@@ -205,17 +175,18 @@ final class Connection
             }
 
             $currentTime = Loop::now();
-            $lastWrite   = $this->lastWrite;
-
-            if ($lastWrite === null) {
-                $lastWrite = $currentTime;
-            }
+            $lastWrite   = $this->lastWrite ?: $currentTime;
 
             /** @var int $nextHeartbeat */
             $nextHeartbeat = $lastWrite + $milliseconds;
 
             if ($currentTime >= $nextHeartbeat) {
-                yield $this->send(new Protocol\HeartbeatFrame);
+                yield $this->write((new Buffer)
+                    ->appendUint8(8)
+                    ->appendUint16(0)
+                    ->appendUint32(0)
+                    ->appendUint8(206)
+                );
             }
 
             unset($currentTime, $lastWrite, $nextHeartbeat);
@@ -232,7 +203,7 @@ final class Connection
         if ($this->heartbeat !== null) {
             Loop::cancel($this->heartbeat);
 
-            unset($this->heartbeat);
+            $this->heartbeat = null;
         }
 
         $this->socket->close();

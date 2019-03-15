@@ -11,6 +11,7 @@
 namespace PHPinnacle\Ridge\Tests;
 
 use PHPinnacle\Ridge\Buffer;
+use PHPinnacle\Ridge\Exception;
 
 class BufferTest extends RidgeTest
 {
@@ -48,11 +49,10 @@ class BufferTest extends RidgeTest
         self::assertEquals($array, $buffer->consumeArray());
     }
 
-    /**
-     * @expectedException \PHPinnacle\Ridge\Exception\ProtocolException
-     */
     public function testArrayWithUnknownField()
     {
+        self::expectException(Exception\ProtocolException::class);
+
         $buffer = new Buffer;
         $table = [
             1,
@@ -82,11 +82,10 @@ class BufferTest extends RidgeTest
         self::assertEquals($table, $buffer->consumeTable());
     }
 
-    /**
-     * @expectedException \PHPinnacle\Ridge\Exception\ProtocolException
-     */
     public function testTableWithUnknownField()
     {
+        self::expectException(Exception\ProtocolException::class);
+
         $buffer = new Buffer;
         $table = [
             '1' => 1,
