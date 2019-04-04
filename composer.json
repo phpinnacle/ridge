@@ -22,6 +22,7 @@
         "phpinnacle/buffer": "^1.0"
     },
     "require-dev": {
+        "phpbench/phpbench": "^0.16",
         "phpunit/phpunit": "^8.0"
     },
     "autoload": {
@@ -31,11 +32,13 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "PHPinnacle\\Ridge\\Tests\\": "tests"
+            "PHPinnacle\\Ridge\\Tests\\": "tests",
+            "PHPinnacle\\Ridge\\Bench\\": "benchmarks"
         }
     },
     "scripts": {
-        "test": "phpunit"
+        "test": "phpunit",
+        "bench": "phpbench run benchmarks --report=aggregate"
     },
     "extra": {
         "branch-alias": {

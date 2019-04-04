@@ -26,13 +26,12 @@ $ composer require phpinnacle/ridge
 use Amp\Loop;
 use PHPinnacle\Ridge\Channel;
 use PHPinnacle\Ridge\Client;
-use PHPinnacle\Ridge\Config;
 use PHPinnacle\Ridge\Message;
 
 require __DIR__ . '/vendor/autoload.php';
 
 Loop::run(function () {
-    $client = Client::create('amqp://admin:admin123@172.23.0.3');
+    $client = Client::create('amqp://user:pass@localhost:5672');
 
     yield $client->connect();
 
@@ -56,25 +55,23 @@ Loop::run(function () {
 
 More examples can be found in [`examples`](examples) directory.
 
-## Benchmark
-
-Benchmarks were run as:
-
-```bash
-
-RIDGE_BENCHMARK_DSN=amqp://user:pass@localhost:5672 php benchmark/producer.php N
-RIDGE_BENCHMARK_DSN=amqp://user:pass@localhost:5672 php benchmark/consumer.php
-```
-
-## Change log
-
-Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
-
 ## Testing
 
 ```bash
 $ composer test
 ```
+
+## Benchmarks
+
+We run benchmarks as follow:
+
+```bash
+$ RIDGE_BENCHMARK_DSN=amqp://user:pass@localhost:5672 composer bench
+```
+
+## Change log
+
+Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
 
 ## Contributing
 
