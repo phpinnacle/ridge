@@ -107,17 +107,22 @@ final class Config
     /**
      * @param string $host
      * @param int    $port
-     * @param string $vhost
      * @param string $user
      * @param string $pass
+     * @param string $vhost
      */
-    public function __construct(string $host, int $port, string $vhost = null, string $user = null, string $pass = null)
-    {
+    public function __construct(
+        string $host = self::DEFAULT_HOST,
+        int $port = self::DEFAULT_PORT,
+        string $user = self::DEFAULT_USER,
+        string $pass = self::DEFAULT_PASS,
+        string $vhost = null
+    ) {
         $this->host  = $host;
         $this->port  = $port;
+        $this->user  = $user;
+        $this->pass  = $pass;
         $this->vhost = $vhost ?: self::DEFAULT_VHOST;
-        $this->user  = $user ?: self::DEFAULT_USER;
-        $this->pass  = $pass ?: self::DEFAULT_PASS;
     }
 
     /**
@@ -133,12 +138,16 @@ final class Config
 
         $options = \array_replace(self::OPTIONS, $query);
 
+        if (!empty($parts['path'])) {
+            $parts['path'] = \substr($parts['path'], 1);
+        }
+
         $self = new self(
             $parts['host'] ?? self::DEFAULT_HOST,
             $parts['port'] ?? self::DEFAULT_PORT,
-            $parts['path'] ?? self::DEFAULT_VHOST,
             $parts['user'] ?? self::DEFAULT_USER,
-            $parts['pass'] ?? self::DEFAULT_PASS
+            $parts['pass'] ?? self::DEFAULT_PASS,
+            $parts['path'] ?? self::DEFAULT_VHOST
         );
 
         $self->timeout   = \filter_var($options['timeout'], FILTER_VALIDATE_INT);
@@ -182,33 +191,27 @@ final class Config
     }
 
     /**
-     * @param string|null $value
-     *
      * @return string
      */
-    public function user(string $value = null): string
+    public function vhost(): string
     {
-        return \is_null($value) ? $this->user : $this->user = $value;
+        return $this->vhost;
     }
 
     /**
-     * @param string|null $value
-     *
      * @return string
      */
-    public function password(string $value = null): string
+    public function user(): string
     {
-        return \is_null($value) ? $this->pass : $this->pass = $value;
+        return $this->user;
     }
 
     /**
-     * @param string|null $value
-     *
      * @return string
      */
-    public function vhost(string $value = null): string
+    public function password(): string
     {
-        return \is_null($value) ? $this->vhost : $this->vhost = $value;
+        return $this->pass;
     }
 
     /**
