@@ -26,12 +26,12 @@ class ExchangeDeleteFrame extends MethodFrame
     public $exchange;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $ifUnused = true;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $nowait = false;
 

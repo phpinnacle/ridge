@@ -28,17 +28,6 @@ abstract class RidgeTest extends TestCase
     }
 
     /**
-     * @param string $class
-     * @param mixed  $value
-     *
-     * @return void
-     */
-    protected static function assertFrame(string $class, $value): void
-    {
-        self::assertInstanceOf($class, $value);
-    }
-
-    /**
      * @return Client
      */
     protected static function client(): Client

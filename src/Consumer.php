@@ -22,54 +22,41 @@ final class Consumer
     private $channel;
 
     /**
-     * @var Buffer
+     * @var MessageReceiver
      */
-    private $buffer;
+    private $receiver;
 
     /**
      * @var callable[]
      */
-    private $callbacks = [];
+    private $listeners = [];
 
     /**
-     * @var Protocol\BasicDeliverFrame
+     * @param Channel         $channel
+     * @param MessageReceiver $receiver
      */
-    private $deliver;
-
-    /**
-     * @var Protocol\ContentHeaderFrame
-     */
-    private $header;
-
-    /**
-     * @var int
-     */
-    private $remaining = 0;
-
-    /**
-     * @param Channel $channel
-     */
-    public function __construct(Channel $channel)
+    public function __construct(Channel $channel, MessageReceiver $receiver)
     {
-        $this->channel = $channel;
-        $this->buffer  = new Buffer;
+        $this->channel  = $channel;
+        $this->receiver = $receiver;
     }
 
     /**
-     * @param string   $consumerTag
-     * @param callable $callback
+     * @return void
      */
-    public function listen(string $consumerTag, callable $callback): void
+    public function start(): void
     {
-        $this->callbacks[$consumerTag] = $callback;
-    }
+        $this->receiver->onMessage(function (Message $message) {
+            if (!$tag = $message->consumerTag()) {
+                return;
+            }
 
-    /**
-     * @param string $consumerTag
-     */
-    public function cancel(string $consumerTag): void
-    {
-        unset($this->callbacks[$consumerTag]);
+            if (!isset($this->listeners[$tag])) {
+                return;
+            }
+
+            asyncCall($this->listeners[$tag], $message, $this->channel);
+        });
     }
 
     /**
@@ -77,85 +64,27 @@ final class Consumer
      */
     public function stop(): void
     {
-        $this->callbacks = [];
+        $this->listeners = [];
     }
 
     /**
-     * @param Protocol\BasicDeliverFrame $frame
+     * @param string   $tag
+     * @param callable $listener
      *
      * @return void
      */
-    public function onDeliver(Protocol\BasicDeliverFrame $frame): void
+    public function subscribe(string $tag, callable $listener): void
     {
-        if (!isset($this->callbacks[$frame->consumerTag])) {
-            return;
-        }
-
-        $this->deliver = $frame;
+        $this->listeners[$tag] = $listener;
     }
 
     /**
-     * @param Protocol\ContentHeaderFrame $frame
+     * @param string $tag
      *
      * @return void
      */
-    public function onHeader(Protocol\ContentHeaderFrame $frame): void
+    public function cancel(string $tag): void
     {
-        if ($this->deliver === null) {
-            return;
-        }
-
-        $this->header    = $frame;
-        $this->remaining = $frame->bodySize;
-
-        $this->runCallbacks();
-    }
-
-    /**
-     * @param Protocol\ContentBodyFrame $frame
-     *
-     * @return void
-     */
-    public function onBody(Protocol\ContentBodyFrame $frame): void
-    {
-        if ($this->header === null) {
-            return;
-        }
-
-        $this->buffer->append($frame->payload);
-
-        $this->remaining -= $frame->size;
-
-        if ($this->remaining < 0) {
-            throw Exception\ChannelException::bodyOverflow($this->remaining);
-        }
-
-        $this->runCallbacks();
-    }
-
-    /**
-     * @return void
-     */
-    private function runCallbacks(): void
-    {
-        if ($this->remaining !== 0) {
-            return;
-        }
-
-        $consumer = $this->deliver->consumerTag;
-        $message  = new Message(
-            $this->buffer->flush(),
-            $this->deliver->exchange,
-            $this->deliver->routingKey,
-            $this->deliver->consumerTag,
-            $this->deliver->deliveryTag,
-            $this->deliver->redelivered,
-            $this->header->toArray()
-        );
-
-        $this->deliver = null;
-        $this->header = null;
-
-        asyncCall($this->callbacks[$consumer], $message, $this->channel);
+        unset($this->listeners[$tag]);
     }
 }

@@ -16,7 +16,7 @@ use PHPinnacle\Ridge\Constants;
 class BasicRecoverAsyncFrame extends MethodFrame
 {
     /**
-     * @var boolean
+     * @var bool
      */
     public $requeue = false;
     

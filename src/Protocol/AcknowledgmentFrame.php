@@ -10,25 +10,15 @@
 
 namespace PHPinnacle\Ridge\Protocol;
 
-class MessageFrame extends MethodFrame
+abstract class AcknowledgmentFrame extends MethodFrame
 {
     /**
-     * @var string
+     * @var int
      */
-    public $exchange;
-
-    /**
-     * @var string
-     */
-    public $routingKey;
+    public $deliveryTag = 0;
 
     /**
      * @var int
      */
-    public $deliveryTag;
-
-    /**
-     * @var bool
-     */
-    public $redelivered = false;
+    public $multiple = false;
 }

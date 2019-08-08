@@ -16,7 +16,7 @@ use PHPinnacle\Ridge\Constants;
 class ConfirmSelectFrame extends MethodFrame
 {
     /**
-     * @var boolean
+     * @var bool
      */
     public $nowait = false;
     

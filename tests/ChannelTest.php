@@ -10,11 +10,13 @@
 
 namespace PHPinnacle\Ridge\Tests;
 
+use Amp\Deferred;
+use Amp\Loop;
 use PHPinnacle\Ridge\Channel;
 use PHPinnacle\Ridge\Client;
 use PHPinnacle\Ridge\Exception;
 use PHPinnacle\Ridge\Message;
-use PHPinnacle\Ridge\Protocol;
+use PHPinnacle\Ridge\Queue;
 
 class ChannelTest extends AsyncTest
 {
@@ -25,11 +27,13 @@ class ChannelTest extends AsyncTest
         /** @var Channel $channel */
         $channel = yield $client->channel();
 
-        try {
-            yield $channel->open();
-        } finally {
-            yield $client->disconnect();
-        }
+        $promise = $channel->open();
+
+        self::assertPromise($promise);
+
+        yield $promise;
+
+        yield $client->disconnect();
     }
 
     public function testClose(Client $client)
@@ -69,7 +73,8 @@ class ChannelTest extends AsyncTest
         $promise = $channel->exchangeDeclare('test_exchange', 'direct', false, false, true);
 
         self::assertPromise($promise);
-        self::assertFrame(Protocol\ExchangeDeclareOkFrame::class, yield $promise);
+
+        yield $promise;
 
         yield $client->disconnect();
     }
@@ -84,7 +89,8 @@ class ChannelTest extends AsyncTest
         $promise = $channel->exchangeDelete('test_exchange_no_ad');
 
         self::assertPromise($promise);
-        self::assertFrame(Protocol\ExchangeDeleteOkFrame::class, yield $promise);
+
+        yield $promise;
 
         yield $client->disconnect();
     }
@@ -97,7 +103,14 @@ class ChannelTest extends AsyncTest
         $promise = $channel->queueDeclare('test_queue', false, false, false, true);
 
         self::assertPromise($promise);
-        self::assertFrame(Protocol\QueueDeclareOkFrame::class, yield $promise);
+
+        /** @var Queue $queue */
+        $queue = yield $promise;
+
+        self::assertInstanceOf(Queue::class, $queue);
+        self::assertSame('test_queue', $queue->name());
+        self::assertSame(0, $queue->messages());
+        self::assertSame(0, $queue->consumers());
 
         yield $client->disconnect();
     }
@@ -113,7 +126,8 @@ class ChannelTest extends AsyncTest
         $promise = $channel->queueBind('test_queue', 'test_exchange');
 
         self::assertPromise($promise);
-        self::assertFrame(Protocol\QueueBindOkFrame::class, yield $promise);
+
+        yield $promise;
 
         yield $client->disconnect();
     }
@@ -130,7 +144,8 @@ class ChannelTest extends AsyncTest
         $promise = $channel->queueUnbind('test_queue', 'test_exchange');
 
         self::assertPromise($promise);
-        self::assertFrame(Protocol\QueueUnbindOkFrame::class, yield $promise);
+
+        yield $promise;
 
         yield $client->disconnect();
     }
@@ -146,12 +161,10 @@ class ChannelTest extends AsyncTest
 
         $promise = $channel->queuePurge('test_queue');
 
-        /** @var Protocol\QueuePurgeOkFrame $frame */
-        $frame = yield $promise;
+        $messages = yield $promise;
 
         self::assertPromise($promise);
-        self::assertFrame(Protocol\QueuePurgeOkFrame::class, $frame);
-        self::assertEquals(2, $frame->messageCount);
+        self::assertEquals(2, $messages);
 
         yield $client->disconnect();
     }
@@ -166,12 +179,10 @@ class ChannelTest extends AsyncTest
 
         $promise = $channel->queueDelete('test_queue_no_ad');
 
-        /** @var Protocol\QueueDeleteOkFrame $frame */
-        $frame = yield $promise;
+        $messages = yield $promise;
 
         self::assertPromise($promise);
-        self::assertFrame(Protocol\QueueDeleteOkFrame::class, $frame);
-        self::assertEquals(1, $frame->messageCount);
+        self::assertEquals(1, $messages);
 
         yield $client->disconnect();
     }
@@ -184,7 +195,74 @@ class ChannelTest extends AsyncTest
         $promise = $channel->publish('test publish');
 
         self::assertPromise($promise);
-        self::assertEquals(1, yield $promise);
+        self::assertNull(yield $promise);
+
+        yield $client->disconnect();
+    }
+
+    public function testMandatoryPublish(Client $client)
+    {
+        /** @var Channel $channel */
+        $channel = yield $client->channel();
+
+        $deferred = new Deferred();
+        $watcher  = Loop::delay(100, function () use ($deferred) {
+            $deferred->resolve(false);
+        });
+
+        $channel->events()->onReturn(function (Message $message) use ($deferred, $watcher) {
+            self::assertSame($message->content(), '.');
+            self::assertSame($message->exchange(), '');
+            self::assertSame($message->routingKey(), '404');
+            self::assertSame($message->headers(), []);
+            self::assertNull($message->consumerTag());
+            self::assertNull($message->deliveryTag());
+            self::assertFalse($message->redelivered());
+            self::assertTrue($message->returned());
+
+            Loop::cancel($watcher);
+
+            $deferred->resolve(true);
+        });
+
+        yield $channel->publish('.', '', '404', [], true);
+
+        self::assertTrue(yield $deferred->promise(), 'Mandatory return event not received!');
+
+        yield $client->disconnect();
+    }
+
+    public function testImmediatePublish(Client $client)
+    {
+        $properties = $client->properties();
+
+        // RabbitMQ 3 doesn't support "immediate" publish flag.
+        if ($properties->product() === 'RabbitMQ' && version_compare($properties->version(), '3.0', '>')) {
+            yield $client->disconnect();
+
+            return;
+        }
+
+        /** @var Channel $channel */
+        $channel = yield $client->channel();
+
+        $deferred = new Deferred();
+        $watcher  = Loop::delay(100, function () use ($deferred) {
+            $deferred->resolve(false);
+        });
+
+        $channel->events()->onReturn(function (Message $message) use ($deferred, $watcher) {
+            self::assertTrue($message->returned());
+
+            Loop::cancel($watcher);
+
+            $deferred->resolve(true);
+        });
+
+        yield $channel->queueDeclare('test_queue', false, false, false, true);
+        yield $channel->publish('.', '', 'test_queue', [], false, true);
+
+        self::assertTrue(yield $deferred->promise(), 'Immediate return event not received!');
 
         yield $client->disconnect();
     }
@@ -196,11 +274,11 @@ class ChannelTest extends AsyncTest
 
         yield $channel->queueDeclare('test_queue', false, false, false, true);
         yield $channel->publish('hi', '', 'test_queue');
-
-        /** @var Protocol\BasicConsumeOkFrame $frame */
-        $frame = yield $channel->consume(function (Message $message) use ($client, &$frame) {
+    
+        /** @noinspection PhpUnusedLocalVariableInspection */
+        $tag = yield $channel->consume(function (Message $message) use ($client, &$tag) {
             self::assertEquals('hi', $message->content());
-            self::assertEquals($frame->consumerTag, $message->consumerTag());
+            self::assertEquals($tag, $message->consumerTag());
 
             yield $client->disconnect();
         }, 'test_queue', false, true);
@@ -214,17 +292,14 @@ class ChannelTest extends AsyncTest
         yield $channel->queueDeclare('test_queue', false, false, false, true);
         yield $channel->publish('hi', '', 'test_queue');
 
-        /** @var Protocol\BasicConsumeOkFrame $consume */
-        $consume = yield $channel->consume(function (Message $message) {
+        $tag = yield $channel->consume(function (Message $message) {
         }, 'test_queue', false, true);
 
-        /** @var Protocol\BasicCancelOkFrame $cancel */
-        $promise = $channel->cancel($consume->consumerTag);
-        $cancel = yield $promise;
+        $promise = $channel->cancel($tag);
 
         self::assertPromise($promise);
-        self::assertFrame(Protocol\BasicCancelOkFrame::class, $cancel);
-        self::assertEquals($consume->consumerTag, $cancel->consumerTag);
+
+        yield $promise;
 
         yield $client->disconnect();
     }
@@ -271,18 +346,16 @@ class ChannelTest extends AsyncTest
         self::assertFalse($message1->redelivered());
         self::assertIsArray($message1->headers());
 
-        $message2 = yield $channel->get('get_test', true);
+        self::assertNull(yield $channel->get('get_test', true));
 
-        self::assertNull($message2);
+        yield $channel->publish('..', '', 'get_test');
 
-        $deliveryTag = yield $channel->publish('..', '', 'get_test');
+        /** @var Message $message2 */
+        $message2 = yield $channel->get('get_test');
 
-        /** @var Message $message3 */
-        $message3 = yield $channel->get('get_test');
-
-        self::assertNotNull($message3);
-        self::assertEquals($deliveryTag, $message3->deliveryTag());
-        self::assertFalse($message3->redelivered());
+        self::assertNotNull($message2);
+        self::assertEquals(2, $message2->deliveryTag());
+        self::assertFalse($message2->redelivered());
 
         $client->disconnect()->onResolve(function () use ($client) {
             yield $client->connect();
@@ -318,7 +391,8 @@ class ChannelTest extends AsyncTest
         $promise = $channel->ack($message);
 
         self::assertPromise($promise);
-        self::assertTrue(yield $promise);
+
+        yield $promise;
 
         yield $client->disconnect();
     }
@@ -340,7 +414,8 @@ class ChannelTest extends AsyncTest
         $promise = $channel->nack($message);
 
         self::assertPromise($promise);
-        self::assertTrue(yield $promise);
+
+        yield $promise;
 
         /** @var Message $message */
         $message = yield $channel->get('test_queue');
@@ -348,10 +423,7 @@ class ChannelTest extends AsyncTest
         self::assertNotNull($message);
         self::assertTrue($message->redelivered());
 
-        $promise = $channel->nack($message, false, false);
-
-        self::assertPromise($promise);
-        self::assertTrue(yield $promise);
+        yield $channel->nack($message, false, false);
 
         self::assertNull(yield $channel->get('test_queue'));
 
@@ -375,7 +447,8 @@ class ChannelTest extends AsyncTest
         $promise = $channel->reject($message);
 
         self::assertPromise($promise);
-        self::assertTrue(yield $promise);
+
+        yield $promise;
 
         /** @var Message $message */
         $message = yield $channel->get('test_queue');
@@ -383,10 +456,7 @@ class ChannelTest extends AsyncTest
         self::assertNotNull($message);
         self::assertTrue($message->redelivered());
 
-        $promise = $channel->reject($message, false);
-
-        self::assertPromise($promise);
-        self::assertTrue(yield $promise);
+        yield $channel->reject($message, false);
 
         self::assertNull(yield $channel->get('test_queue'));
 
@@ -410,7 +480,8 @@ class ChannelTest extends AsyncTest
         $promise = $channel->recover(true);
 
         self::assertPromise($promise);
-        self::assertFrame(Protocol\BasicRecoverOkFrame::class, yield $promise);
+
+        yield $promise;
 
         /** @var Message $message */
         $message = yield $channel->get('test_queue');
@@ -564,52 +635,22 @@ class ChannelTest extends AsyncTest
             yield $client->disconnect();
         }
     }
-//
-//    public function testReturn()
-//    {
-//        $client = new Client();
-//        $client->connect();
-//        $channel  = $client->channel();
-//
-//        /** @var Message $returnedMessage */
-//        $returnedMessage = null;
-//        /** @var MethodBasicReturnFrame $returnedFrame */
-//        $returnedFrame = null;
-//        $channel->addReturnListener(function (Message $message, MethodBasicReturnFrame $frame) use ($client, &$returnedMessage, &$returnedFrame) {
-//            $returnedMessage = $message;
-//            $returnedFrame = $frame;
-//            $client->stop();
-//        });
-//
-//        $channel->publish('xxx', [], '', '404', true);
-//
-//        $client->run(1);
-//
-//        self::assertNotNull($returnedMessage);
-//        self::assertInstanceOf(Message::class, $returnedMessage);
-//        self::assertEquals('xxx', $returnedMessage->content);
-//        self::assertEquals('', $returnedMessage->exchange);
-//        self::assertEquals('404', $returnedMessage->routingKey);
-//    }
 
-//    public function testConfirmMode()
-//    {
-//        $client = new Client();
-//        $client->connect();
-//        $channel = $client->channel();
-//
-//        $deliveryTag = null;
-//        $channel->confirmSelect(function (MethodBasicAckFrame $frame) use (&$deliveryTag, $client) {
-//            if ($frame->deliveryTag === $deliveryTag) {
-//                $deliveryTag = null;
-//                $client->stop();
-//            }
-//        });
-//
-//        $deliveryTag = $channel->publish('.');
-//
-//        $client->run(1);
-//
-//        self::assertNull($deliveryTag);
-//    }
+    public function testConfirmMode(Client $client)
+    {
+        /** @var Channel $channel */
+        $channel = yield $client->channel();
+        $channel->events()->onAck(function (int $deliveryTag, bool $multiple) {
+            self::assertEquals($deliveryTag, 1);
+            self::assertFalse($multiple);
+        });
+
+        yield $channel->confirmSelect();
+
+        $deliveryTag = yield $channel->publish('.');
+
+        self::assertEquals($deliveryTag, 1);
+
+        yield $client->disconnect();
+    }
 }

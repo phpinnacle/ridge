@@ -36,7 +36,7 @@ class ExchangeUnbindFrame extends MethodFrame
     public $routingKey = '';
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $nowait = false;
 

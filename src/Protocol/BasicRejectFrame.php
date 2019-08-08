@@ -13,23 +13,18 @@ namespace PHPinnacle\Ridge\Protocol;
 use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
-class BasicRejectFrame extends MethodFrame
+class BasicRejectFrame extends AcknowledgmentFrame
 {
     /**
-     * @var int
-     */
-    public $deliveryTag;
-
-    /**
-     * @var boolean
+     * @var bool
      */
     public $requeue = true;
-    
+
     public function __construct()
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_REJECT);
     }
-    
+
     /**
      * @param Buffer $buffer
      *
@@ -43,7 +38,7 @@ class BasicRejectFrame extends MethodFrame
         
         return $self;
     }
-    
+
     /**
      * @return Buffer
      */

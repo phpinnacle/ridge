@@ -2,6 +2,8 @@
 
 namespace PHPinnacle\Ridge\Bench;
 
+use PhpBench\Benchmark\Metadata\Annotations\Iterations;
+use PhpBench\Benchmark\Metadata\Annotations\Revs;
 use PHPinnacle\Ridge\Message;
 use function Amp\call;
 use function Amp\Promise\wait;

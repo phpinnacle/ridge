@@ -36,7 +36,7 @@ class QueueBindFrame extends MethodFrame
     public $routingKey = '';
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $nowait = false;
 

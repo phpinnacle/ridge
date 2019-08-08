@@ -2,6 +2,8 @@
 
 namespace PHPinnacle\Ridge\Bench;
 
+use PhpBench\Benchmark\Metadata\Annotations\AfterMethods;
+use PhpBench\Benchmark\Metadata\Annotations\BeforeMethods;
 use PHPinnacle\Ridge\Channel;
 use PHPinnacle\Ridge\Client;
 use function Amp\call;
@@ -76,4 +78,3 @@ EOT;
         }));
     }
 }
-

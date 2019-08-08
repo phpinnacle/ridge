@@ -15,11 +15,57 @@ namespace PHPinnacle\Ridge\Exception;
 final class ChannelException extends RidgeException
 {
     /**
+     * @param int $id
+     *
+     * @return self
+     */
+    public static function notReady(int $id): self
+    {
+        return new self("Trying to open not ready channel #{$id}.");
+    }
+    
+    /**
+     * @param int $id
+     *
+     * @return self
+     */
+    public static function alreadyClosed(int $id): self
+    {
+        return new self("Trying to close already closed channel #{$id}.");
+    }
+
+    /**
+     * @param string $mode
+     *
+     * @return self
+     */
+    public static function notRegularFor(string $mode): self
+    {
+        return new self("Channel not in regular mode, cannot change to {$mode} mode.");
+    }
+    
+    /**
+     * @return self
+     */
+    public static function notTransactional(): self
+    {
+        return new self("Channel not in transactional mode.");
+    }
+
+    /**
      * @return self
      */
     public static function getInProgress(): self
     {
         return new self("Another 'basic.get' already in progress. You should use 'basic.consume' instead of multiple 'basic.get'.");
+    }
+
+    /**
+     * @return self
+     */
+    public static function frameOrder(): self
+    {
+        return new self("Consume frames order malformed.");
     }
 
     /**

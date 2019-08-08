@@ -26,7 +26,7 @@ class BasicGetFrame extends MethodFrame
     public $queue = '';
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $noAck = false;
     

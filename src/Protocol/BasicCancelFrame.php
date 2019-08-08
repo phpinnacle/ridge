@@ -21,7 +21,7 @@ class BasicCancelFrame extends MethodFrame
     public $consumerTag;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $nowait = false;
 
