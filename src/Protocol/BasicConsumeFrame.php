@@ -31,22 +31,22 @@ class BasicConsumeFrame extends MethodFrame
     public $consumerTag = '';
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $noLocal = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $noAck = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $exclusive = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $nowait = false;
 

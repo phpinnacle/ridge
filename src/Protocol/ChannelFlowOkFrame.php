@@ -16,7 +16,7 @@ use PHPinnacle\Ridge\Constants;
 class ChannelFlowOkFrame extends MethodFrame
 {
     /**
-     * @var boolean
+     * @var bool
      */
     public $active;
 

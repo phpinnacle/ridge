@@ -28,6 +28,7 @@ final class Constants
     const
         STATUS_REPLY_SUCCESS       = 200,
         STATUS_CONTENT_TOO_LARGE   = 311,
+        STATUS_NO_ROUTE            = 312,
         STATUS_NO_CONSUMERS        = 313,
         STATUS_CONNECTION_FORCED   = 320,
         STATUS_INVALID_PATH        = 402,

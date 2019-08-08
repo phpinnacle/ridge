@@ -31,27 +31,27 @@ class ExchangeDeclareFrame extends MethodFrame
     public $exchangeType = 'direct';
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $passive = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $durable = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $autoDelete = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $internal = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $nowait = false;
 

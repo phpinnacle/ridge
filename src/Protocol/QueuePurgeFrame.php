@@ -26,7 +26,7 @@ class QueuePurgeFrame extends MethodFrame
     public $queue = '';
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $nowait = false;
 

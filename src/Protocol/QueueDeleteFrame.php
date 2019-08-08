@@ -26,17 +26,17 @@ class QueueDeleteFrame extends MethodFrame
     public $queue = '';
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $ifUnused = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $ifEmpty = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $nowait = false;
 

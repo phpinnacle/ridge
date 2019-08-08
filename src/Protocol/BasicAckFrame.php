@@ -13,18 +13,8 @@ namespace PHPinnacle\Ridge\Protocol;
 use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Constants;
 
-class BasicAckFrame extends MethodFrame
+class BasicAckFrame extends AcknowledgmentFrame
 {
-    /**
-     * @var int
-     */
-    public $deliveryTag = 0;
-
-    /**
-     * @var boolean
-     */
-    public $multiple = false;
-    
     public function __construct()
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_ACK);

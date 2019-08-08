@@ -36,7 +36,7 @@ class ExchangeBindFrame extends MethodFrame
     public $routingKey = '';
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $nowait = false;
 

@@ -45,18 +45,19 @@ final class Parser
             return null;
         }
 
-        $type    = $this->buffer->readUint8(0);
-        $channel = $this->buffer->readUint16(1);
-        $size    = $this->buffer->readUint32(3);
+        $size   = $this->buffer->readUint32(3);
+        $length = $size + 8;
 
-        if ($this->buffer->size() < $size + 8) {
+        if ($this->buffer->size() < $length) {
             return null;
         }
 
-        $this->buffer->discard(7);
+        $type     = $this->buffer->readUint8(0);
+        $channel  = $this->buffer->readUint16(1);
+        $payload  = $this->buffer->read($size, 7);
+        $frameEnd = $this->buffer->readUint8($length - 1);
 
-        $payload  = $this->buffer->consume($size);
-        $frameEnd = $this->buffer->consumeUint8();
+        $this->buffer->discard($length);
 
         if ($frameEnd !== Constants::FRAME_END) {
             throw Exception\ProtocolException::invalidFrameEnd($frameEnd);

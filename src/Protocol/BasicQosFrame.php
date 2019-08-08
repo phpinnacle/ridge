@@ -26,7 +26,7 @@ class BasicQosFrame extends MethodFrame
     public $prefetchCount = 0;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $global = false;
     

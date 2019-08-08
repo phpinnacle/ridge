@@ -31,12 +31,12 @@ class BasicPublishFrame extends MethodFrame
     public $routingKey = '';
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $mandatory = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $immediate = false;
     

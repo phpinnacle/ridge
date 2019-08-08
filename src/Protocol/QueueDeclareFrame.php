@@ -26,27 +26,27 @@ class QueueDeclareFrame extends MethodFrame
     public $queue = '';
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $passive = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $durable = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $exclusive = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $autoDelete = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $nowait = false;
 

@@ -52,6 +52,11 @@ final class Client
     private $connection;
 
     /**
+     * @var Properties
+     */
+    private $properties;
+
+    /**
      * @param Config $config
      */
     public function __construct(Config $config)
@@ -70,13 +75,25 @@ final class Client
     }
 
     /**
+     * @return Properties
+     */
+    public function properties(): Properties
+    {
+        if ($this->state !== self::STATE_CONNECTED) {
+            throw Exception\ClientException::notConnected();
+        }
+
+        return $this->properties;
+    }
+
+    /**
      * @return Promise<void>
      */
     public function connect(): Promise
     {
         return call(function () {
             if ($this->state !== self::STATE_NOT_CONNECTED) {
-                throw new \RuntimeException('Client already connected/connecting');
+                throw Exception\ClientException::alreadyConnected();
             }
 
             $this->state = self::STATE_CONNECTING;
@@ -141,7 +158,7 @@ final class Client
             }
 
             if ($this->state !== self::STATE_CONNECTED) {
-                throw new Exception\ClientException('Client is not connected');
+                throw Exception\ClientException::notConnected();
             }
 
             $this->state = self::STATE_DISCONNECTING;
@@ -171,12 +188,12 @@ final class Client
     {
         return call(function() {
             if ($this->state !== self::STATE_CONNECTED) {
-                throw new Exception\ClientException('Client is not connected');
+                throw Exception\ClientException::notConnected();
             }
 
             try {
                 $id = $this->findChannelId();
-                $channel = new Channel($id, $this->connection, new Settings($this->config->maxFrame()));
+                $channel = new Channel($id, $this->connection, $this->properties);
 
                 $this->channels[$id] = $channel;
 
@@ -209,8 +226,8 @@ final class Client
                 });
 
                 return $channel;
-            } catch(\Throwable $throwable) {
-                throw new Exception\ClientException('channel.open unexpected response', $throwable->getCode(), $throwable);
+            } catch (\Throwable $error) {
+                throw Exception\ClientException::unexpectedResponse($error);
             }
         });
     }
@@ -233,8 +250,10 @@ final class Client
             $start = yield $this->await(Protocol\ConnectionStartFrame::class);
 
             if (\strpos($start->mechanisms, "AMQPLAIN") === false) {
-                throw new Exception\ClientException("Server does not support AMQPLAIN mechanism (supported: {$start->mechanisms}).");
+                throw Exception\ClientException::notSupported($start->mechanisms);
             }
+
+            $this->properties = Properties::create($start->serverProperties);
 
             $buffer = new Buffer;
             $buffer
@@ -274,8 +293,8 @@ final class Client
                 $heartbeat = \min($heartbeat, $tune->heartbeat);
             }
 
-            $channelMax = \min($this->config->maxChannel(), $tune->channelMax);
-            $frameMax   = \min($this->config->maxFrame(), $tune->frameMax);
+            $maxChannel = \min($this->config->maxChannel(), $tune->channelMax);
+            $maxFrame   = \min($this->config->maxFrame(), $tune->frameMax);
 
             $buffer = new Buffer;
             $buffer
@@ -284,12 +303,14 @@ final class Client
                 ->appendUint32(12)
                 ->appendUint16(10)
                 ->appendUint16(31)
-                ->appendInt16($channelMax)
-                ->appendInt32($frameMax)
+                ->appendInt16($maxChannel)
+                ->appendInt32($maxFrame)
                 ->appendInt16($heartbeat)
                 ->appendUint8(206);
 
             yield $this->connection->write($buffer);
+
+            $this->properties->tune($maxChannel, $maxFrame);
 
             if ($heartbeat > 0) {
                 $this->connection->heartbeat($heartbeat);
@@ -378,7 +399,7 @@ final class Client
             }
         }
 
-        throw new Exception\ClientException("No available channels");
+        throw Exception\ClientException::noChannelsAvailable();
     }
 
     /**

@@ -59,6 +59,8 @@ checks:
 build:
   nodes:
     analysis:
+      services:
+        rabbitmq: 3
       project_setup:
         override: true
       tests:

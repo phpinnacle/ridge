@@ -26,7 +26,7 @@ class ConnectionOpenFrame extends MethodFrame
     public $capabilities = '';
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $insist = false;
     

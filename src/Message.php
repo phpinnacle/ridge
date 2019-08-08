@@ -40,9 +40,14 @@ final class Message
     private $deliveryTag;
 
     /**
-     * @var boolean
+     * @var bool
      */
     private $redelivered;
+
+    /**
+     * @var bool
+     */
+    private $returned;
 
     /**
      * @var array
@@ -50,13 +55,14 @@ final class Message
     private $headers;
 
     /**
-     * @param string  $exchange
-     * @param string  $content
-     * @param string  $routingKey
-     * @param string  $consumerTag
-     * @param int     $deliveryTag
-     * @param boolean $redelivered
-     * @param array   $headers
+     * @param string $content
+     * @param string $exchange
+     * @param string $routingKey
+     * @param string $consumerTag
+     * @param int    $deliveryTag
+     * @param bool   $redelivered
+     * @param bool   $returned
+     * @param array  $headers
      */
     public function __construct(
         string $content,
@@ -65,6 +71,7 @@ final class Message
         string $consumerTag = null,
         int $deliveryTag = null,
         bool $redelivered = false,
+        bool $returned = false,
         array $headers = []
     ) {
         $this->content     = $content;
@@ -73,6 +80,7 @@ final class Message
         $this->consumerTag = $consumerTag;
         $this->deliveryTag = $deliveryTag;
         $this->redelivered = $redelivered;
+        $this->returned    = $returned;
         $this->headers     = $headers;
     }
 
@@ -122,6 +130,14 @@ final class Message
     public function redelivered(): bool
     {
         return $this->redelivered;
+    }
+
+    /**
+     * @return bool
+     */
+    public function returned(): bool
+    {
+        return $this->returned;
     }
 
     /**
