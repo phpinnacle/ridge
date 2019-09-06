@@ -13,10 +13,10 @@ declare(strict_types=1);
 namespace PHPinnacle\Ridge;
 
 use function Amp\asyncCall, Amp\call, Amp\Socket\connect;
+use Amp\Socket\ConnectContext;
 use Amp\Deferred;
 use Amp\Loop;
 use Amp\Promise;
-use Amp\Socket\ClientConnectContext;
 use Amp\Socket\Socket;
 
 final class Connection
@@ -122,7 +122,7 @@ final class Connection
     public function open(int $timeout, int $maxAttempts, bool $noDelay): Promise
     {
         return call(function () use ($timeout, $maxAttempts, $noDelay) {
-            $context = new ClientConnectContext;
+            $context = new ConnectContext();
 
             if ($maxAttempts > 0) {
                 $context = $context->withMaxAttempts($maxAttempts);
