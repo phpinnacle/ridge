@@ -17,8 +17,8 @@
     ],
     "require": {
         "php": "^7.2",
-        "amphp/amp": "^2.0",
-        "amphp/socket": "^0.10",
+        "amphp/amp": "v2.2.*",
+        "amphp/socket": "^1",
         "phpinnacle/buffer": "^1.0"
     },
     "require-dev": {
