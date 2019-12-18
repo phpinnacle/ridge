@@ -12,7 +12,6 @@ declare(strict_types=1);
 
 namespace PHPinnacle\Ridge;
 
-use PHPinnacle\Ridge\Exception\ClientException;
 use function Amp\asyncCall, Amp\call, Amp\Socket\connect;
 use Amp\Socket\ConnectContext;
 use Amp\Deferred;
@@ -72,12 +71,8 @@ final class Connection
     {
         $this->lastWrite = Loop::now();
 
-        if($this->socket) {
-            /** @noinspection PhpUnhandledExceptionInspection */
-            return $this->socket->write($payload->flush());
-        }
-
-        throw new ClientException("Connection closed");
+        /** @noinspection PhpUnhandledExceptionInspection */
+        return $this->socket->write($payload->flush());
     }
 
     /**
