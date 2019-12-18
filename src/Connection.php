@@ -32,7 +32,7 @@ final class Connection
     private $parser;
 
     /**
-     * @var Socket
+     * @var Socket|null
      */
     private $socket;
 
