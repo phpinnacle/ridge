@@ -18,8 +18,8 @@
     "require": {
         "php": "^7.2",
         "amphp/amp": "v2.5.*",
-        "amphp/socket": "^1",
-        "phpinnacle/buffer": "^1.0"
+        "amphp/socket": "v1.1.*",
+        "phpinnacle/buffer": "v1.0.*"
     },
     "require-dev": {
         "phpbench/phpbench": "^0.16",
