@@ -119,22 +119,24 @@ final class Client
                 yield $this->connectionTune();
                 yield $this->connectionOpen();
 
-                asyncCall(function()
-                {
-                    yield $this->await(Protocol\ConnectionCloseFrame::class);
+                asyncCall(
+                    function()
+                    {
+                        yield $this->await(Protocol\ConnectionCloseFrame::class);
 
-                    $buffer = new Buffer;
-                    $buffer
-                        ->appendUint8(1)
-                        ->appendUint16(0)
-                        ->appendUint32(4)
-                        ->appendUint16(10)
-                        ->appendUint16(51)
-                        ->appendUint8(206);
+                        $buffer = new Buffer;
+                        $buffer
+                            ->appendUint8(1)
+                            ->appendUint16(0)
+                            ->appendUint32(4)
+                            ->appendUint16(10)
+                            ->appendUint16(51)
+                            ->appendUint8(206);
 
-                    $this->connection->write($buffer);
-                    $this->connection->close();
-                });
+                        $this->connection->write($buffer);
+                        $this->connection->close();
+                    }
+                );
 
                 $this->state = self::STATE_CONNECTED;
             }
