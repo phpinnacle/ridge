@@ -47,6 +47,15 @@ jobs:
     name: PHPUnit
 
     runs-on: ubuntu-latest
+    services:
+      rabbitmq:
+        image: rabbitmq:3-management
+        ports:
+          - 5672/tcp
+        env:
+          RABBITMQ_DEFAULT_USER: admin
+          RABBITMQ_DEFAULT_PASS: password
+        options: --health-cmd "rabbitmqctl node_health_check" --health-interval 10s --health-timeout 5s --health-retries 5
 
     env:
       PHP_EXTENSIONS: mbstring, dom, intl, json, libxml, xml, xmlwriter, sockets
@@ -67,17 +76,8 @@ jobs:
       - name: Install dependencies
         run: composer update -ov
 
-      - name: Run RabbitMQ
-        uses: getong/rabbitmq-action@v1.2
-        with:
-          host port: 5672/tcp
-          rabbitmq version: 3.8.2-management-alpine
-          rabbitmq user: admin
-          rabbitmq password: password
-          rabbitmq vhost: vhost
-
       - name: Run tests with phpunit
-        run: XDEBUG_MODE=coverage RIDGE_TEST_DSN=amqp://admin:password@127.0.0.1:5672/vhost?heartbeat=0 ./vendor/bin/phpunit --coverage-clover=coverage.clover
+        run: XDEBUG_MODE=coverage RIDGE_TEST_DSN=amqp://admin:password@127.0.0.1:5672/?heartbeat=0 ./vendor/bin/phpunit --coverage-clover=coverage.clover
 
       - name: Upload coverage file
         uses: actions/upload-artifact@v2
