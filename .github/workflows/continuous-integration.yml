@@ -53,8 +53,8 @@ jobs:
         ports:
           - 5672:5672
         env:
-          RABBITMQ_DEFAULT_USER: admin
-          RABBITMQ_DEFAULT_PASS: password
+          RABBITMQ_DEFAULT_USER: guest
+          RABBITMQ_DEFAULT_PASS: guest
         options: --health-cmd "rabbitmqctl node_health_check" --health-interval 10s --health-timeout 5s --health-retries 5
 
     env:
@@ -82,7 +82,7 @@ jobs:
           time: '30s'
 
       - name: Run tests with phpunit
-        run: XDEBUG_MODE=coverage RIDGE_TEST_DSN=amqp://admin:password@127.0.0.1:5672/?heartbeat=0 ./vendor/bin/phpunit --coverage-clover=coverage.clover
+        run: XDEBUG_MODE=coverage php ./vendor/bin/phpunit --configuration ./phpunit.xml --coverage-clover=coverage.clover
 
       - name: Upload coverage file
         uses: actions/upload-artifact@v2
