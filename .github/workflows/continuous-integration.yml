@@ -56,9 +56,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Override PHP ini values for JIT compiler
-        run: echo "PHP_INI_VALUES::assert.exception=1, zend.assertions=1, opcache.enable=1, opcache.enable_cli=1, opcache.optimization_level=-1, opcache.jit=1255, opcache.jit_buffer_size=32M" >> $GITHUB_ENV
-
       - name: Install PHP with extensions
         uses: shivammathur/setup-php@v2
         with:
