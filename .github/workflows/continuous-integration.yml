@@ -76,6 +76,11 @@ jobs:
       - name: Install dependencies
         run: composer update -ov
 
+      - name: Await
+        uses: jakejarvis/wait-action@master
+        with:
+          time: '30s'
+
       - name: Run tests with phpunit
         run: XDEBUG_MODE=coverage RIDGE_TEST_DSN=amqp://admin:password@127.0.0.1:5672/?heartbeat=0 ./vendor/bin/phpunit --coverage-clover=coverage.clover
 
