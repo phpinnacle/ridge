@@ -159,9 +159,7 @@ final class Connection
                                  */
                                 foreach($this->callbacks[(int) $frame->channel][$class] ?? [] as $i => $callback)
                                 {
-                                    $result = yield call($callback, $frame);
-
-                                    if($result)
+                                    if(yield call($callback, $frame))
                                     {
                                         unset($this->callbacks[(int) $frame->channel][$class][$i]);
                                     }
@@ -169,7 +167,7 @@ final class Connection
                             }
                         }
 
-                        //$this->socket = null;
+                        $this->socket = null;
                     }
                 );
             }
