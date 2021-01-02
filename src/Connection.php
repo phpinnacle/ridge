@@ -176,11 +176,9 @@ final class Connection
 
     public function heartbeat(int $interval): void
     {
-        $milliseconds = $interval * 1000;
-
         $this->heartbeatWatcherId = Loop::repeat(
-            $milliseconds,
-            function(string $watcherId) use ($milliseconds)
+            $interval,
+            function(string $watcherId) use ($interval)
             {
                 if($this->socket === null)
                 {
@@ -192,8 +190,7 @@ final class Connection
                 $currentTime = Loop::now();
                 $lastWrite   = $this->lastWrite ?: $currentTime;
 
-                /** @var int $nextHeartbeat */
-                $nextHeartbeat = $lastWrite + $milliseconds;
+                $nextHeartbeat = $lastWrite + $interval;
 
                 if($currentTime >= $nextHeartbeat)
                 {

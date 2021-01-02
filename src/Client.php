@@ -306,11 +306,11 @@ final class Client
                 /** @var Protocol\ConnectionTuneFrame $tune */
                 $tune = yield $this->await(Protocol\ConnectionTuneFrame::class);
 
-                $heartbeat = $this->config->heartbeat;
+                $heartbeatInterval = $this->config->heartbeat;
 
-                if($heartbeat !== 0)
+                if($heartbeatInterval !== 0)
                 {
-                    $heartbeat = \min($heartbeat, $tune->heartbeat);
+                    $heartbeatInterval = \min($heartbeatInterval, $tune->heartbeat);
                 }
 
                 $maxChannel = \min($this->config->maxChannel, $tune->channelMax);
@@ -325,16 +325,16 @@ final class Client
                     ->appendUint16(31)
                     ->appendInt16($maxChannel)
                     ->appendInt32($maxFrame)
-                    ->appendInt16($heartbeat)
+                    ->appendInt16($heartbeatInterval)
                     ->appendUint8(206);
 
                 yield $this->connection->write($buffer);
 
                 $this->properties->tune($maxChannel, $maxFrame);
 
-                if($heartbeat > 0)
+                if($heartbeatInterval > 0)
                 {
-                    $this->connection->heartbeat($heartbeat);
+                    $this->connection->heartbeat($heartbeatInterval);
                 }
             }
         );
