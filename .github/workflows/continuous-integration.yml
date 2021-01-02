@@ -73,11 +73,10 @@ jobs:
       - name: Run RabbitMQ
         uses: getong/rabbitmq-action@v1.2
         with:
-          rabbitmq version: '3.8.2-management-alpine'
+          rabbitmq version: 3.8.2-management-alpine
           host port: 5672
-          rabbitmq user: 'guest'
-          rabbitmq password: 'guest'
-          rabbitmq vhost: '/'
+          rabbitmq user: guest
+          rabbitmq password: guest
 
       - name: Run tests with phpunit
         run: XDEBUG_MODE=coverage php ./vendor/bin/phpunit --configuration ./phpunit.xml --coverage-clover=coverage.clover
