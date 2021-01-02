@@ -69,12 +69,12 @@ jobs:
         uses: getong/rabbitmq-action@v1.2
         with:
           rabbitmq version: 3.8.2-management-alpine
-          rabbitmq user: guest
-          rabbitmq password: guest
-          rabbitmq vhost: /
+          rabbitmq user: admin
+          rabbitmq password: password
+          rabbitmq vhost: vhost_name
 
       - name: Run tests with phpunit
-        run: RIDGE_TEST_DSN=amqp://guest:guest@127.0.0.1:5672//?heartbeat=0 ./vendor/bin/phpunit
+        run: RIDGE_TEST_DSN=amqp://admin:password@127.0.0.1:5672/vhost_name?heartbeat=0 ./vendor/bin/phpunit
 
       - name: Upload coverage file
         uses: actions/upload-artifact@v2
