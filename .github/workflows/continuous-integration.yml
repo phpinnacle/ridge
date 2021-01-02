@@ -79,6 +79,10 @@ jobs:
       - name: Run tests with phpunit
         run: php ./vendor/bin/phpunit --coverage-clover=coverage.clover
 
+      - name: Send code coverage report to Scrutinizer
+        run: |
+          docker logs $(docker ps --format "{{.Names}}")
+
       - name: Upload coverage file
         uses: actions/upload-artifact@v2
         with:
