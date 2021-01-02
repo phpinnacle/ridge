@@ -75,7 +75,7 @@ jobs:
           rabbitmq vhost: /
 
       - name: Docker info
-        run: docker ps
+        run: docker logs hungry_rubin
 
       - name: Run tests with phpunit
         run: php ./vendor/bin/phpunit --configuration ./phpunit.xml --coverage-clover=coverage.clover
