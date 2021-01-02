@@ -169,7 +169,7 @@ final class Connection
                             }
                         }
 
-                        $this->socket = null;
+                        //$this->socket = null;
                     }
                 );
             }
