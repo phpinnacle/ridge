@@ -48,9 +48,6 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    env:
-      PHP_EXTENSIONS: dom, json, mbstring
-
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -59,10 +56,11 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.0
+          coverage: pcov
           tools: composer:v2
 
       - name: Install dependencies
-        run: composer update --no-ansi --no-interaction --no-progress --prefer-lowest
+        run: composer install -ov
 
       - name: Run RabbitMQ
         uses: getong/rabbitmq-action@v1.2
