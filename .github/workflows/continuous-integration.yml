@@ -74,10 +74,9 @@ jobs:
           rabbitmq vhost: /
 
       - name: Set RabbitMQ URL in environment
-        run: echo "RIDGE_TEST_DSN=amqp://guest:guest@127.0.0.1:5672/?heartbeat=0" >> $GITHUB_ENV
+        run: echo "RIDGE_TEST_DSN=amqp://guest:guest@127.0.0.1:5672//?heartbeat=0" >> $GITHUB_ENV
 
       - name: Run tests with phpunit
-        continue-on-error: true
         run: php ./vendor/bin/phpunit --coverage-clover=coverage.clover
 
       - name: Upload coverage file
