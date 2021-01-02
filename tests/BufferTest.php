@@ -1,5 +1,4 @@
-<?php /** @noinspection PhpUnhandledExceptionInspection */
-
+<?php
 /**
  * This file is part of PHPinnacle/Ridge.
  *
@@ -13,11 +12,10 @@ namespace PHPinnacle\Ridge\Tests;
 
 use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Exception;
-use PHPUnit\Framework\TestCase;
 
-class BufferTest extends TestCase
+class BufferTest extends RidgeTest
 {
-    public function testTimestamp(): void
+    public function testTimestamp()
     {
         $buffer = new Buffer;
         $date = new \DateTime;
@@ -26,7 +24,7 @@ class BufferTest extends TestCase
         self::assertSame($date->getTimestamp(), $buffer->consumeTimestamp()->getTimestamp());
     }
 
-    public function testString(): void
+    public function testString()
     {
         $buffer = new Buffer;
 
@@ -34,7 +32,7 @@ class BufferTest extends TestCase
         self::assertSame('abcd', $buffer->consumeString());
     }
 
-    public function testText(): void
+    public function testText()
     {
         $buffer = new Buffer;
 
@@ -42,7 +40,7 @@ class BufferTest extends TestCase
         self::assertSame('abcd', $buffer->consumeText());
     }
 
-    public function testArray(): void
+    public function testArray()
     {
         $buffer = new Buffer;
         $array = [1, 'a', null, true, M_PI, [2], ['a' => 'b'], \DateTime::createFromFormat('m/d/Y', '1/1/1970')];
@@ -51,9 +49,9 @@ class BufferTest extends TestCase
         self::assertEquals($array, $buffer->consumeArray());
     }
 
-    public function testArrayWithUnknownField(): void
+    public function testArrayWithUnknownField()
     {
-        $this->expectException(Exception\ProtocolException::class);
+        self::expectException(Exception\ProtocolException::class);
 
         $buffer = new Buffer;
         $table = [
@@ -65,7 +63,7 @@ class BufferTest extends TestCase
         $buffer->appendArray($table);
     }
 
-    public function testTable(): void
+    public function testTable()
     {
         $buffer = new Buffer;
         $table = [
@@ -84,9 +82,9 @@ class BufferTest extends TestCase
         self::assertEquals($table, $buffer->consumeTable());
     }
 
-    public function testTableWithUnknownField(): void
+    public function testTableWithUnknownField()
     {
-        $this->expectException(Exception\ProtocolException::class);
+        self::expectException(Exception\ProtocolException::class);
 
         $buffer = new Buffer;
         $table = [
@@ -98,7 +96,7 @@ class BufferTest extends TestCase
         $buffer->appendTable($table);
     }
 
-    public function testBits(): void
+    public function testBits()
     {
         $buffer = new Buffer;
         $bits = [true, false, true];

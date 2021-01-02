@@ -11,11 +11,10 @@
 namespace PHPinnacle\Ridge\Tests;
 
 use PHPinnacle\Ridge\Config;
-use PHPUnit\Framework\TestCase;
 
-class ConfigTest extends TestCase
+class ConfigTest extends RidgeTest
 {
-    public function testCreate(): void
+    public function testCreate()
     {
         $config = new Config();
 
@@ -26,7 +25,7 @@ class ConfigTest extends TestCase
         self::assertSame('guest', $config->pass);
     }
 
-    public function testUri(): void
+    public function testUri()
     {
         $default = new Config();
         $custom = new Config('my-domain.com', 6672);
@@ -35,7 +34,7 @@ class ConfigTest extends TestCase
         self::assertSame('tcp://my-domain.com:6672', $custom->uri());
     }
 
-    public function testParse(): void
+    public function testParse()
     {
         $config = Config::parse('amqp://user:pass@localhost:5672/test');
 
@@ -46,7 +45,7 @@ class ConfigTest extends TestCase
         self::assertSame('pass', $config->pass);
     }
 
-    public function testVhost(): void
+    public function testVhost()
     {
         self::assertSame('test', Config::parse('amqp://localhost:5672/test')->vhost);
         self::assertSame('/', Config::parse('amqp://localhost:5672/')->vhost);

@@ -12,56 +12,50 @@ namespace PHPinnacle\Ridge\Tests;
 
 use Amp\Loop;
 use Amp\Socket\ConnectException;
+use PHPinnacle\Ridge\Channel;
 use PHPinnacle\Ridge\Client;
-use PHPinnacle\Ridge\Config;
-use PHPUnit\Framework\TestCase;
-use function Amp\Promise\wait;
+use PHPinnacle\Ridge\Message;
 
-class ClientConnectTest extends TestCase
+class ClientConnectTest extends RidgeTest
 {
-    protected function setUp(): void
+    public function testConnect()
     {
-        parent::setUp();
+        Loop::run(function () {
+            $client = self::client();
 
-        Loop::run();
+            $promise = $client->connect();
+
+            self::assertPromise($promise);
+
+            yield $promise;
+
+            self::assertTrue($client->isConnected());
+
+            yield $client->disconnect();
+        });
     }
 
-    protected function tearDown(): void
+    public function testConnectFailure()
     {
-        parent::tearDown();
+        self::expectException(ConnectException::class);
 
-        Loop::stop();
+        Loop::run(function () {
+            $client = Client::create('amqp://127.0.0.2:5673');
+
+            yield $client->connect();
+        });
     }
-
-    public function testConnect(): void
-    {
-        $client = new Client(
-            Config::parse(\getenv('RIDGE_TEST_DSN'))
-        );
-
-        wait($client->connect());
-
-        self::assertTrue($client->isConnected());
-
-        wait($client->disconnect());
-    }
-
-    public function testConnectFailure(): void
-    {
-        $this->expectException(ConnectException::class);
-
-        $client = Client::create('amqp://127.0.0.2:5673');
-
-        wait($client->connect());
-    }
-
-    public function testConnectAuth()
-    {
-        $this->expectException(ConnectException::class);
-
-        $client = new Client(new Config('localhost', 5673, 'testuser', 'testpassword'));
-
-        wait($client->connect());
-        wait($client->disconnect());
-    }
+//
+//    public function testConnectAuth()
+//    {
+//        $client = new Client([
+//            'user' => 'testuser',
+//            'password' => 'testpassword',
+//            'vhost' => 'testvhost',
+//        ]);
+//        $client->connect();
+//        $client->disconnect();
+//
+//        $this->assertTrue(true);
+//    }
 }
