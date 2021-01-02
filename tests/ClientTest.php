@@ -12,57 +12,96 @@ namespace PHPinnacle\Ridge\Tests;
 
 use PHPinnacle\Ridge\Channel;
 use PHPinnacle\Ridge\Client;
+use PHPinnacle\Ridge\Config;
 use PHPinnacle\Ridge\Message;
+use PHPUnit\Framework\TestCase;
+use function Amp\Promise\wait;
 
-class ClientTest extends AsyncTest
+class ClientTest extends TestCase
 {
-    public function testOpenChannel(Client $client): \Generator
-    {
-        self::assertPromise($promise = $client->channel());
-        self::assertInstanceOf(Channel::class, yield $promise);
+    /**
+     * @var Client
+     */
+    private $client;
 
-        yield $client->disconnect();
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->client = new Client(
+            Config::parse(\getenv('RIDGE_TEST_DSN'))
+        );
+
+        wait($this->client->connect());
     }
 
-    public function testOpenMultipleChannel(Client $client): \Generator
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        wait($this->client->disconnect());
+    }
+
+    public function testOpenChannel(): void
+    {
+        self::assertInstanceOf(Channel::class, wait($this->client->channel()));
+    }
+
+    public function testOpenMultipleChannel(): void
     {
         /** @var Channel $channel1 */
+        $channel1 = wait($this->client->channel());
+
         /** @var Channel $channel2 */
-        $channel1 = yield $client->channel();
-        $channel2 = yield $client->channel();
+        $channel2 = wait($this->client->channel());
 
         self::assertInstanceOf(Channel::class, $channel1);
         self::assertInstanceOf(Channel::class, $channel2);
         self::assertNotEquals($channel1->id(), $channel2->id());
 
         /** @var Channel $channel3 */
-        $channel3 = yield $client->channel();
+        $channel3 = wait($this->client->channel());
 
         self::assertInstanceOf(Channel::class, $channel3);
         self::assertNotEquals($channel1->id(), $channel3->id());
         self::assertNotEquals($channel2->id(), $channel3->id());
-
-        yield $client->disconnect();
     }
 
-    public function testDisconnectWithBufferedMessages(Client $client): \Generator
+    public function testDisconnectWithBufferedMessages(): void
     {
         /** @var Channel $channel */
-        $channel = yield $client->channel();
-        $count   = 0;
+        $channel = wait($this->client->channel());
 
-        yield $channel->qos(0, 1000);
-        yield $channel->queueDeclare('disconnect_test', false, false, false, true);
-        yield $channel->consume(function (Message $message, Channel $channel) use ($client, &$count) {
-            yield $channel->ack($message);
 
-            self::assertEquals(1, ++$count);
+        wait($channel->qos(0, 1000));
 
-            yield $client->disconnect();
-        }, 'disconnect_test');
+        wait(
+            $channel->queueDeclare('disconnect_test', false, false, false, true)
+        );
 
-        yield $channel->publish('.', '', 'disconnect_test');
-        yield $channel->publish('.', '', 'disconnect_test');
-        yield $channel->publish('.', '', 'disconnect_test');
+        wait($channel->publish('.', '', 'disconnect_test'));
+        wait($channel->publish('.', '', 'disconnect_test'));
+        wait($channel->publish('.', '', 'disconnect_test'));
+
+        $count = 0;
+
+        wait(
+            $channel->consume(
+                function(Message $message, Channel $channel) use (&$count)
+                {
+                    yield $channel->ack($message);
+
+                    $count++;
+
+                    if($count === 3)
+                    {
+                        return;
+                    }
+                },
+                'disconnect_test'
+            )
+        );
+
+        self::assertSame(3, $count);
     }
 }

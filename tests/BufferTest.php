@@ -13,8 +13,9 @@ namespace PHPinnacle\Ridge\Tests;
 
 use PHPinnacle\Ridge\Buffer;
 use PHPinnacle\Ridge\Exception;
+use PHPUnit\Framework\TestCase;
 
-class BufferTest extends RidgeTest
+class BufferTest extends TestCase
 {
     public function testTimestamp(): void
     {
