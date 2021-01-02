@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      PHP_EXTENSIONS: dom, json, mbstring, tokenizer
+      PHP_EXTENSIONS: dom, json, mbstring
 
     steps:
       - name: Checkout
