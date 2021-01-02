@@ -72,6 +72,9 @@ jobs:
           rabbitmq password: guest
           rabbitmq vhost: /
 
+      - name: Run docker info
+        run: docker ps
+
       - name: Run tests with phpunit
         run: php ./vendor/bin/phpunit --configuration ./phpunit.xml --coverage-clover=coverage.clover
 
