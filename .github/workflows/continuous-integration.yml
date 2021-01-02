@@ -49,7 +49,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      PHP_EXTENSIONS: curl, mbstring, dom, intl, json, libxml, xml, xmlwriter, sockets
+      PHP_EXTENSIONS: mbstring, dom, intl, json, libxml, xml, xmlwriter, sockets
+      PHP_INI_VALUES: assert.exception=1, zend.assertions=1
 
     steps:
       - name: Checkout
@@ -60,6 +61,7 @@ jobs:
         with:
           php-version: 8.0
           extensions: ${{ env.PHP_EXTENSIONS }}
+          ini-values: ${{ env.PHP_INI_VALUES }}
           tools: composer:v2
 
       - name: Install dependencies
@@ -71,10 +73,10 @@ jobs:
           rabbitmq version: 3.8.2-management-alpine
           rabbitmq user: admin
           rabbitmq password: password
-          rabbitmq vhost: vhost_name
+          rabbitmq vhost: vhost
 
       - name: Run tests with phpunit
-        run: RIDGE_TEST_DSN=amqp://admin:password@127.0.0.1:5672/vhost_name?heartbeat=0 ./vendor/bin/phpunit
+        run: XDEBUG_MODE=coverage RIDGE_TEST_DSN=amqp://admin:password@127.0.0.1:5672/vhost?heartbeat=0 ./vendor/bin/phpunit --coverage-clover=coverage.clover
 
       - name: Upload coverage file
         uses: actions/upload-artifact@v2
