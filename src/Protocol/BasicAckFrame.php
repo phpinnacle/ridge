@@ -19,11 +19,9 @@ class BasicAckFrame extends AcknowledgmentFrame
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_ACK);
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
@@ -34,9 +32,6 @@ class BasicAckFrame extends AcknowledgmentFrame
         return $self;
     }
     
-    /**
-     * @return Buffer
-     */
     public function pack(): Buffer
     {
         $buffer = parent::pack();

@@ -24,11 +24,9 @@ class BasicGetOkFrame extends MessageFrame
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_GET_OK);
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
@@ -41,10 +39,7 @@ class BasicGetOkFrame extends MessageFrame
         
         return $self;
     }
-    
-    /**
-     * @return Buffer
-     */
+
     public function pack(): Buffer
     {
         $buffer = parent::pack();

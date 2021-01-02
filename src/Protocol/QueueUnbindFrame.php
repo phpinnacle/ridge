@@ -46,9 +46,7 @@ class QueueUnbindFrame extends MethodFrame
     }
 
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
@@ -62,9 +60,6 @@ class QueueUnbindFrame extends MethodFrame
         return $self;
     }
 
-    /**
-     * @return Buffer
-     */
     public function pack(): Buffer
     {
         $buffer = parent::pack();

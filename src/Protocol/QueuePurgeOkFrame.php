@@ -24,11 +24,9 @@ class QueuePurgeOkFrame extends MethodFrame
     {
         parent::__construct(Constants::CLASS_QUEUE, Constants::METHOD_QUEUE_PURGE_OK);
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
@@ -37,10 +35,7 @@ class QueuePurgeOkFrame extends MethodFrame
         
         return $self;
     }
-    
-    /**
-     * @return Buffer
-     */
+
     public function pack(): Buffer
     {
         $buffer = parent::pack();

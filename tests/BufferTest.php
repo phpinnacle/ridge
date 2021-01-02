@@ -1,4 +1,5 @@
-<?php
+<?php /** @noinspection PhpUnhandledExceptionInspection */
+
 /**
  * This file is part of PHPinnacle/Ridge.
  *
@@ -15,7 +16,7 @@ use PHPinnacle\Ridge\Exception;
 
 class BufferTest extends RidgeTest
 {
-    public function testTimestamp()
+    public function testTimestamp(): void
     {
         $buffer = new Buffer;
         $date = new \DateTime;
@@ -24,7 +25,7 @@ class BufferTest extends RidgeTest
         self::assertSame($date->getTimestamp(), $buffer->consumeTimestamp()->getTimestamp());
     }
 
-    public function testString()
+    public function testString(): void
     {
         $buffer = new Buffer;
 
@@ -32,7 +33,7 @@ class BufferTest extends RidgeTest
         self::assertSame('abcd', $buffer->consumeString());
     }
 
-    public function testText()
+    public function testText(): void
     {
         $buffer = new Buffer;
 
@@ -40,7 +41,7 @@ class BufferTest extends RidgeTest
         self::assertSame('abcd', $buffer->consumeText());
     }
 
-    public function testArray()
+    public function testArray(): void
     {
         $buffer = new Buffer;
         $array = [1, 'a', null, true, M_PI, [2], ['a' => 'b'], \DateTime::createFromFormat('m/d/Y', '1/1/1970')];
@@ -49,9 +50,9 @@ class BufferTest extends RidgeTest
         self::assertEquals($array, $buffer->consumeArray());
     }
 
-    public function testArrayWithUnknownField()
+    public function testArrayWithUnknownField(): void
     {
-        self::expectException(Exception\ProtocolException::class);
+        $this->expectException(Exception\ProtocolException::class);
 
         $buffer = new Buffer;
         $table = [
@@ -63,7 +64,7 @@ class BufferTest extends RidgeTest
         $buffer->appendArray($table);
     }
 
-    public function testTable()
+    public function testTable(): void
     {
         $buffer = new Buffer;
         $table = [
@@ -82,9 +83,9 @@ class BufferTest extends RidgeTest
         self::assertEquals($table, $buffer->consumeTable());
     }
 
-    public function testTableWithUnknownField()
+    public function testTableWithUnknownField(): void
     {
-        self::expectException(Exception\ProtocolException::class);
+        $this->expectException(Exception\ProtocolException::class);
 
         $buffer = new Buffer;
         $table = [
@@ -96,7 +97,7 @@ class BufferTest extends RidgeTest
         $buffer->appendTable($table);
     }
 
-    public function testBits()
+    public function testBits(): void
     {
         $buffer = new Buffer;
         $bits = [true, false, true];

@@ -12,13 +12,11 @@ namespace PHPinnacle\Ridge\Tests;
 
 use Amp\Loop;
 use Amp\Socket\ConnectException;
-use PHPinnacle\Ridge\Channel;
 use PHPinnacle\Ridge\Client;
-use PHPinnacle\Ridge\Message;
 
 class ClientConnectTest extends RidgeTest
 {
-    public function testConnect()
+    public function testConnect(): void
     {
         Loop::run(function () {
             $client = self::client();
@@ -35,9 +33,9 @@ class ClientConnectTest extends RidgeTest
         });
     }
 
-    public function testConnectFailure()
+    public function testConnectFailure(): void
     {
-        self::expectException(ConnectException::class);
+        $this->expectException(ConnectException::class);
 
         Loop::run(function () {
             $client = Client::create('amqp://127.0.0.2:5673');

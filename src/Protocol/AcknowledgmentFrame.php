@@ -18,7 +18,7 @@ abstract class AcknowledgmentFrame extends MethodFrame
     public $deliveryTag = 0;
 
     /**
-     * @var int
+     * @var bool
      */
     public $multiple = false;
 }

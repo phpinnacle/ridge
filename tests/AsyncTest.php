@@ -65,6 +65,7 @@ abstract class AsyncTest extends RidgeTest
 
                     self::markTestIncomplete($message);
 
+                    /** @noinspection PhpUnreachableStatementInspection */
                     Loop::stop();
                 }
             });

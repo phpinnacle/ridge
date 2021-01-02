@@ -8,13 +8,13 @@
  * file that was distributed with this source code.
  */
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace PHPinnacle\Ridge;
 
 final class Properties
 {
-    const UNKNOWN = 'unknown';
+    public const UNKNOWN = 'unknown';
 
     /**
      * @var string
@@ -44,8 +44,9 @@ final class Properties
      *   direct_reply_to
      *
      * @var bool[]
+     * @psalm-var array<string, bool>
      */
-    private $capabilities = [];
+    private $capabilities;
 
     /**
      * @var int
@@ -58,10 +59,7 @@ final class Properties
     private $maxFrame = 0xFFFF;
 
     /**
-     * @param string $platform
-     * @param string $product
-     * @param string $version
-     * @param array  $capabilities
+     * @psalm-param array<string, bool> $capabilities
      */
     public function __construct(string $platform, string $product, string $version, array $capabilities)
     {
@@ -72,9 +70,12 @@ final class Properties
     }
 
     /**
-     * @param array $config
-     *
-     * @return self
+     * @psalm-param array{
+     *     platform: string,
+     *     product: string,
+     *     version: string,
+     *     capabilities: array<string, bool>
+     * } $config
      */
     public static function create(array $config): self
     {
@@ -86,61 +87,37 @@ final class Properties
         );
     }
 
-    /**
-     * @param int $maxChannel
-     * @param int $maxFrame
-     */
     public function tune(int $maxChannel, int $maxFrame): void
     {
         $this->maxChannel = $maxChannel;
         $this->maxFrame   = $maxFrame;
     }
 
-    /**
-     * @param string $ability
-     *
-     * @return bool
-     */
     public function capable(string $ability): bool
     {
         return $this->capabilities[$ability] ?? false;
     }
 
-    /**
-     * @return string
-     */
     public function platform(): string
     {
         return $this->platform;
     }
 
-    /**
-     * @return string
-     */
     public function product(): string
     {
         return $this->product;
     }
 
-    /**
-     * @return string
-     */
     public function version(): string
     {
         return $this->version;
     }
 
-    /**
-     * @return int
-     */
     public function maxFrame(): int
     {
         return $this->maxFrame;
     }
 
-    /**
-     * @return int
-     */
     public function maxChannel(): int
     {
         return $this->maxChannel;

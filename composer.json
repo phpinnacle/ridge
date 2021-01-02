@@ -1,51 +1,57 @@
 {
-    "name": "phpinnacle/ridge",
-    "type": "library",
-    "description": "PHPinnacle async AMQP client",
-    "keywords": [
-        "phpinnacle", "async", "amqp"
-    ],
-    "homepage": "https://github.com/phpinnacle/ridge",
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "PHPinnacle",
-            "email": "dev@phpinnacle.com",
-            "homepage": "https://phpinnacle.com",
-            "role": "Developer"
-        }
-    ],
-    "require": {
-        "php": "^7.2",
-        "amphp/amp": "v2.5.*",
-        "amphp/socket": "v1.1.*",
-        "phpinnacle/buffer": "v1.0.*"
-    },
-    "require-dev": {
-        "phpbench/phpbench": "^0.16",
-        "phpunit/phpunit": "^8.0"
-    },
-    "autoload": {
-        "psr-4": {
-            "PHPinnacle\\Ridge\\": "src"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "PHPinnacle\\Ridge\\Tests\\": "tests",
-            "PHPinnacle\\Ridge\\Bench\\": "benchmarks"
-        }
-    },
-    "scripts": {
-        "test": "phpunit",
-        "bench": "phpbench run benchmarks --report=aggregate"
-    },
-    "extra": {
-        "branch-alias": {
-            "dev-master": "1.0-dev"
-        }
-    },
-    "config": {
-        "sort-packages": true
+  "name": "phpinnacle/ridge",
+  "type": "library",
+  "description": "PHPinnacle async AMQP client",
+  "keywords": [
+    "phpinnacle",
+    "async",
+    "amqp"
+  ],
+  "homepage": "https://github.com/phpinnacle/ridge",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "PHPinnacle",
+      "email": "dev@phpinnacle.com",
+      "homepage": "https://phpinnacle.com",
+      "role": "Developer"
     }
+  ],
+  "require": {
+    "php": ">=8.0",
+    "amphp/amp": "v2.5.*",
+    "amphp/socket": "v1.1.*",
+    "phpinnacle/buffer": "v1.1.*"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "v9.5.*",
+    "vimeo/psalm": "v4.3.*",
+    "phpstan/phpstan": "v0.12.*"
+  },
+  "prefer-stable": true,
+  "autoload": {
+    "psr-4": {
+      "PHPinnacle\\Ridge\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "PHPinnacle\\Ridge\\Tests\\": "tests"
+    }
+  },
+  "scripts": {
+    "psalm": "./vendor/bin/psalm --config=psalm.xml",
+    "phpstan": "./vendor/bin/phpstan analyse src --level 7",
+    "tests": "./vendor/bin/phpunit --configuration phpunit.xml --verbose",
+    "coverage": "./vendor/bin/phpunit --configuration phpunit.xml --coverage-html ./coverage --verbose"
+  },
+  "extra": {
+    "branch-alias": {
+      "dev-master": "1.0-dev"
+    }
+  },
+  "config": {
+    "sort-packages": true,
+    "optimize-autoloader": true
+  }
 }

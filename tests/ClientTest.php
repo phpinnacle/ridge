@@ -16,7 +16,7 @@ use PHPinnacle\Ridge\Message;
 
 class ClientTest extends AsyncTest
 {
-    public function testOpenChannel(Client $client)
+    public function testOpenChannel(Client $client): \Generator
     {
         self::assertPromise($promise = $client->channel());
         self::assertInstanceOf(Channel::class, yield $promise);
@@ -24,7 +24,7 @@ class ClientTest extends AsyncTest
         yield $client->disconnect();
     }
 
-    public function testOpenMultipleChannel(Client $client)
+    public function testOpenMultipleChannel(Client $client): \Generator
     {
         /** @var Channel $channel1 */
         /** @var Channel $channel2 */
@@ -45,7 +45,7 @@ class ClientTest extends AsyncTest
         yield $client->disconnect();
     }
 
-    public function testDisconnectWithBufferedMessages(Client $client)
+    public function testDisconnectWithBufferedMessages(Client $client): \Generator
     {
         /** @var Channel $channel */
         $channel = yield $client->channel();

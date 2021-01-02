@@ -19,32 +19,27 @@ class BasicDeliverFrame extends MessageFrame
      * @var string
      */
     public $consumerTag;
-    
+
     public function __construct()
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_DELIVER);
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
-        $self = new self;
-        $self->consumerTag   = $buffer->consumeString();
-        $self->deliveryTag   = $buffer->consumeInt64();
+        $self              = new self;
+        $self->consumerTag = $buffer->consumeString();
+        $self->deliveryTag = $buffer->consumeInt64();
         [$self->redelivered] = $buffer->consumeBits(1);
-        $self->exchange      = $buffer->consumeString();
-        $self->routingKey    = $buffer->consumeString();
-        
+        $self->exchange   = $buffer->consumeString();
+        $self->routingKey = $buffer->consumeString();
+
         return $self;
     }
-    
-    /**
-     * @return Buffer
-     */
+
     public function pack(): Buffer
     {
         $buffer = parent::pack();
@@ -53,7 +48,7 @@ class BasicDeliverFrame extends MessageFrame
         $buffer->appendBits([$this->redelivered]);
         $buffer->appendString($this->exchange);
         $buffer->appendString($this->routingKey);
-        
+
         return $buffer;
     }
 }

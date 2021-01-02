@@ -22,7 +22,7 @@ abstract class RidgeTest extends TestCase
      *
      * @return void
      */
-    protected static function assertPromise($value): void
+    protected static function assertPromise(mixed $value): void
     {
         self::assertInstanceOf(Promise::class, $value);
     }
@@ -37,7 +37,6 @@ abstract class RidgeTest extends TestCase
         }
 
         $config = Config::parse($dsn);
-        $config->heartbeat(0);
 
         return new Client($config);
     }

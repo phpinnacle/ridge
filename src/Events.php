@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace PHPinnacle\Ridge;
 
@@ -26,21 +26,12 @@ final class Events
      */
     private $receiver;
 
-    /**
-     * @param Channel         $channel
-     * @param MessageReceiver $receiver
-     */
     public function __construct(Channel $channel, MessageReceiver $receiver)
     {
         $this->channel  = $channel;
         $this->receiver = $receiver;
     }
 
-    /**
-     * @param callable $listener
-     *
-     * @return self
-     */
     public function onAck(callable $listener): self
     {
         $this->onFrame(Protocol\BasicAckFrame::class, $listener);
@@ -48,11 +39,6 @@ final class Events
         return $this;
     }
 
-    /**
-     * @param callable $listener
-     *
-     * @return self
-     */
     public function onNack(callable $listener): self
     {
         $this->onFrame(Protocol\BasicNackFrame::class, $listener);
@@ -60,34 +46,36 @@ final class Events
         return $this;
     }
 
-    /**
-     * @param callable $listener
-     *
-     * @return self
-     */
     public function onReturn(callable $listener): self
     {
-        $this->receiver->onMessage(function (Message $message) use ($listener) {
-            if (!$message->returned()) {
-                return;
-            }
+        $this->receiver->onMessage(
+            function(Message $message) use ($listener)
+            {
+                if(!$message->returned())
+                {
+                    return;
+                }
 
-            asyncCall($listener, $message, $this->channel);
-        });
+                /** @psalm-suppress MixedArgumentTypeCoercion */
+                asyncCall($listener, $message, $this->channel);
+            }
+        );
 
         return $this;
     }
 
     /**
-     * @param string   $frame
-     * @param callable $callback
-     *
-     * @return void
+     * @psalm-param class-string<Protocol\AbstractFrame> $frame
      */
     private function onFrame(string $frame, callable $callback): void
     {
-        $this->receiver->onFrame($frame, function (Protocol\AcknowledgmentFrame $frame) use ($callback) {
-            asyncCall($callback, $frame->deliveryTag, $frame->multiple, $this->channel);
-        });
+        $this->receiver->onFrame(
+            $frame,
+            function(Protocol\AcknowledgmentFrame $frame) use ($callback)
+            {
+                /** @psalm-suppress MixedArgumentTypeCoercion */
+                asyncCall($callback, $frame->deliveryTag, $frame->multiple, $this->channel);
+            }
+        );
     }
 }

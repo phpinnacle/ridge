@@ -1,0 +1,16 @@
+version: "3"
+
+services:
+
+  queue:
+    image: rabbitmq:3-management
+    container_name: service-bus-skeletone-queue
+    restart: always
+    ports:
+      - 5672:5672
+      - 15672:15672
+    environment:
+      RABBITMQ_VM_MEMORY_HIGH_WATERMARK: 512MiB
+      RABBITMQ_ERLANG_COOKIE: f6fAjy5yes
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
