@@ -49,8 +49,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      PHP_EXTENSIONS: dom, json, mbstring, curl, tokenizer
-      PHP_INI_VALUES: assert.exception=1, zend.assertions=1
+      PHP_EXTENSIONS: dom, json, mbstring, tokenizer
 
     steps:
       - name: Checkout
@@ -61,7 +60,6 @@ jobs:
         with:
           php-version: 8.0
           extensions: ${{ env.PHP_EXTENSIONS }}
-          ini-values: ${{ env.PHP_INI_VALUES }}
           tools: composer:v2
 
       - name: Install dependencies
