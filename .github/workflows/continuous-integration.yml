@@ -74,11 +74,11 @@ jobs:
           rabbitmq password: guest
           rabbitmq vhost: /
 
-      - name: Docker info
-        run: docker logs $(docker ps --format "{{.Names}}")
-
       - name: Run tests with phpunit
         run: php ./vendor/bin/phpunit --configuration ./phpunit.xml --coverage-clover=coverage.clover
+
+      - name: Docker info
+        run: docker logs $(docker ps --format "{{.Names}}")
 
       - name: Upload coverage file
         uses: actions/upload-artifact@v2
