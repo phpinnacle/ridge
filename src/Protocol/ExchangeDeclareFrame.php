@@ -64,11 +64,9 @@ class ExchangeDeclareFrame extends MethodFrame
     {
         parent::__construct(Constants::CLASS_EXCHANGE, Constants::METHOD_EXCHANGE_DECLARE);
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
@@ -84,9 +82,6 @@ class ExchangeDeclareFrame extends MethodFrame
         return $self;
     }
     
-    /**
-     * @return Buffer
-     */
     public function pack(): Buffer
     {
         $buffer = parent::pack();

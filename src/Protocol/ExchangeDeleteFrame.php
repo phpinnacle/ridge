@@ -39,11 +39,9 @@ class ExchangeDeleteFrame extends MethodFrame
     {
         parent::__construct(Constants::CLASS_EXCHANGE, Constants::METHOD_EXCHANGE_DELETE);
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
@@ -56,10 +54,7 @@ class ExchangeDeleteFrame extends MethodFrame
         
         return $self;
     }
-    
-    /**
-     * @return Buffer
-     */
+
     public function pack(): Buffer
     {
         $buffer = parent::pack();

@@ -24,11 +24,9 @@ class ConfirmSelectFrame extends MethodFrame
     {
         parent::__construct(Constants::CLASS_CONFIRM, Constants::METHOD_CONFIRM_SELECT);
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
@@ -37,10 +35,7 @@ class ConfirmSelectFrame extends MethodFrame
         
         return $self;
     }
-    
-    /**
-     * @return Buffer
-     */
+
     public function pack(): Buffer
     {
         $buffer = parent::pack();

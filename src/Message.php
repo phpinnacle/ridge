@@ -30,12 +30,12 @@ final class Message
     private $routingKey;
 
     /**
-     * @var string
+     * @var string|null
      */
     private $consumerTag;
 
     /**
-     * @var int
+     * @var int|null
      */
     private $deliveryTag;
 
@@ -54,22 +54,12 @@ final class Message
      */
     private $headers;
 
-    /**
-     * @param string $content
-     * @param string $exchange
-     * @param string $routingKey
-     * @param string $consumerTag
-     * @param int    $deliveryTag
-     * @param bool   $redelivered
-     * @param bool   $returned
-     * @param array  $headers
-     */
     public function __construct(
         string $content,
         string $exchange,
         string $routingKey,
-        string $consumerTag = null,
-        int $deliveryTag = null,
+        ?string $consumerTag = null,
+        ?int $deliveryTag = null,
         bool $redelivered = false,
         bool $returned = false,
         array $headers = []
@@ -84,79 +74,47 @@ final class Message
         $this->headers     = $headers;
     }
 
-    /**
-     * @return string
-     */
     public function content(): string
     {
         return $this->content;
     }
 
-    /**
-     * @return string
-     */
     public function exchange(): string
     {
         return $this->exchange;
     }
 
-    /**
-     * @return string
-     */
     public function routingKey(): string
     {
         return $this->routingKey;
     }
 
-    /**
-     * @return string
-     */
     public function consumerTag(): ?string
     {
         return $this->consumerTag;
     }
 
-    /**
-     * @return int
-     */
     public function deliveryTag(): ?int
     {
         return $this->deliveryTag;
     }
 
-    /**
-     * @return bool
-     */
     public function redelivered(): bool
     {
         return $this->redelivered;
     }
 
-    /**
-     * @return bool
-     */
     public function returned(): bool
     {
         return $this->returned;
     }
 
-    /**
-     * @return array
-     */
     public function headers(): array
     {
         return $this->headers;
     }
 
-    /**
-     * Returns header or default value.
-     *
-     * @param string $name
-     * @param mixed  $default
-     *
-     * @return mixed
-     */
-    public function header(string $name, $default = null)
+    public function header(string $name, mixed $default = null): mixed
     {
         return $this->headers[$name] ?? $default;
     }

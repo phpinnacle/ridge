@@ -48,13 +48,10 @@ class QueueBindFrame extends MethodFrame
     public function __construct()
     {
         parent::__construct(Constants::CLASS_QUEUE, Constants::METHOD_QUEUE_BIND);
-        
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
@@ -68,10 +65,7 @@ class QueueBindFrame extends MethodFrame
         
         return $self;
     }
-    
-    /**
-     * @return Buffer
-     */
+
     public function pack(): Buffer
     {
         $buffer = parent::pack();

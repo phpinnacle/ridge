@@ -59,11 +59,9 @@ class BasicConsumeFrame extends MethodFrame
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_CONSUME);
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
@@ -79,9 +77,6 @@ class BasicConsumeFrame extends MethodFrame
         return $self;
     }
     
-    /**
-     * @return Buffer
-     */
     public function pack(): Buffer
     {
         $buffer = parent::pack();

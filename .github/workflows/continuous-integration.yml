@@ -1,0 +1,114 @@
+name: "Continuous Integration"
+
+on: [ push, pull_request ]
+
+jobs:
+  psalm:
+    name: Psalm
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.0
+          coverage: none
+          tools: composer:v2
+
+      - name: Install dependencies with composer
+        run: composer install -ov
+
+      - name: Run vimeo/psalm
+        run: ./vendor/bin/psalm --config=psalm.xml --shepherd
+
+  phpstan:
+    name: PHPStan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.0
+          coverage: none
+          tools: composer:v2
+
+      - name: Install dependencies with composer
+        run: composer install -ov
+
+      - name: Run phpstan/phpstan
+        run: ./vendor/bin/phpstan analyse src --level 7
+
+  phpunit:
+    name: PHPUnit
+
+    runs-on: ubuntu-latest
+    services:
+      rabbitmq:
+        image: rabbitmq:alpine
+        ports:
+          - 5672:5672
+        env:
+          RABBITMQ_DEFAULT_USER: guest
+          RABBITMQ_DEFAULT_PASS: guest
+        options: --health-cmd "rabbitmqctl node_health_check" --health-interval 10s --health-timeout 5s --health-retries 5
+
+    env:
+      PHP_EXTENSIONS: mbstring, dom, intl, json, libxml, xml, xmlwriter, sockets
+      PHP_INI_VALUES: assert.exception=1, zend.assertions=1
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install PHP with extensions
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.0
+          extensions: ${{ env.PHP_EXTENSIONS }}
+          ini-values: ${{ env.PHP_INI_VALUES }}
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer update -ov
+
+      - name: Await
+        uses: jakejarvis/wait-action@master
+
+      - name: Run tests with phpunit
+        run: XDEBUG_MODE=coverage php ./vendor/bin/phpunit --configuration ./phpunit.xml --coverage-clover=coverage.clover
+
+      - name: Upload coverage file
+        uses: actions/upload-artifact@v2
+        with:
+          name: phpunit.coverage
+          path: coverage.clover
+
+  upload_coverage:
+    name: Upload coverage
+    runs-on: ubuntu-latest
+    needs: phpunit
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 7.4
+          coverage: none
+          tools: composer
+
+      - name: Download coverage files
+        uses: actions/download-artifact@v2
+        with:
+          path: reports
+
+      - name: Send code coverage report to Scrutinizer
+        run: |
+          wget https://scrutinizer-ci.com/ocular.phar
+          php ocular.phar code-coverage:upload --format=php-clover ./reports/phpunit.coverage/coverage.clover

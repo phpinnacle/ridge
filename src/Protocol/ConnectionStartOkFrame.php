@@ -41,11 +41,9 @@ class ConnectionStartOkFrame extends MethodFrame
     
         $this->channel = Constants::CONNECTION_CHANNEL;
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
@@ -58,9 +56,6 @@ class ConnectionStartOkFrame extends MethodFrame
         return $self;
     }
 
-    /**
-     * @return Buffer
-     */
     public function pack(): Buffer
     {
         $buffer = parent::pack();
