@@ -62,6 +62,8 @@ class ChannelTest extends TestCase
         }
 
         wait($this->client->disconnect());
+
+        var_export(shell_exec('docker logs $(docker ps --format "{{.Names}}")'));
     }
 
     public function testOpenNotReadyChannel(): void
