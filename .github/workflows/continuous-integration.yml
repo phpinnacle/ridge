@@ -68,6 +68,7 @@ jobs:
       - name: Run RabbitMQ
         uses: getong/rabbitmq-action@v1.2
         with:
+          rabbitmq version: '3.8.2-management-alpine'
           rabbitmq user: guest
           rabbitmq password: guest
           rabbitmq vhost: /
