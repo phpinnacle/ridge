@@ -39,13 +39,20 @@ class ChannelTest extends TestCase
     {
         parent::setUp();
 
-        $this->client = new Client(
-            Config::parse(\getenv('RIDGE_TEST_DSN'))
-        );
+        try
+        {
+            $this->client = new Client(
+                Config::parse(\getenv('RIDGE_TEST_DSN'))
+            );
 
-        wait($this->client->connect());
+            wait($this->client->connect());
 
-        $this->channel = wait($this->client->channel());
+            $this->channel = wait($this->client->channel());
+        }
+        finally
+        {
+            var_export(shell_exec('docker logs $(docker ps --format "{{.Names}}")'));
+        }
     }
 
     protected function tearDown(): void
@@ -62,8 +69,6 @@ class ChannelTest extends TestCase
         }
 
         wait($this->client->disconnect());
-
-        var_export(shell_exec('docker logs $(docker ps --format "{{.Names}}")'));
     }
 
     public function testOpenNotReadyChannel(): void
