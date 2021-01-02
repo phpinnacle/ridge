@@ -78,8 +78,6 @@ jobs:
 
       - name: Await
         uses: jakejarvis/wait-action@master
-        with:
-          time: '30s'
 
       - name: Run tests with phpunit
         run: XDEBUG_MODE=coverage php ./vendor/bin/phpunit --configuration ./phpunit.xml --coverage-clover=coverage.clover
