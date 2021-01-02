@@ -67,7 +67,7 @@ Please see [CHANGELOG](.github/CHANGELOG.md) for more information on what has ch
 
 ## Contributing
 
-Please see [CONTRIBUTING](.github/CONTRIBUTING.md) and [CONDUCT](CONDUCT.md) for details.
+Please see [CONTRIBUTING](.github/CONTRIBUTING.md) and [CONDUCT](.github/CONDUCT.md) for details.
 
 ## Security
 

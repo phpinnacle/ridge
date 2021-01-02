@@ -80,7 +80,7 @@ jobs:
           rabbitmq vhost: /
 
       - name: Run tests with phpunit
-        run: XDEBUG_MODE=coverage php ./vendor/bin/phpunit --configuration ./phpunit.xml --coverage-clover=coverage.clover
+        run: php ./vendor/bin/phpunit --configuration ./phpunit.xml --coverage-clover=coverage.clover
 
       - name: Upload coverage file
         uses: actions/upload-artifact@v2
