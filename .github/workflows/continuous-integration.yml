@@ -77,6 +77,7 @@ jobs:
           host port: 5672
           rabbitmq user: guest
           rabbitmq password: guest
+          rabbitmq vhost: /
 
       - name: Run tests with phpunit
         run: XDEBUG_MODE=coverage php ./vendor/bin/phpunit --configuration ./phpunit.xml --coverage-clover=coverage.clover
