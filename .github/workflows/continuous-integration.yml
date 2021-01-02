@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       rabbitmq:
-        image: rabbitmq:3-management
+        image: rabbitmq:alpine
         ports:
           - 5672:5672
         env:
