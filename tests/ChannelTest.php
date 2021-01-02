@@ -66,17 +66,23 @@ class ChannelTest extends TestCase
 
     public function testOpenNotReadyChannel(): void
     {
+        /** @var Channel $channel */
+        $channel = wait($this->client->channel());
+
         $this->expectException(Exception\ChannelException::class);
 
-        wait($this->channel->open());
+        wait($channel->open());
     }
 
     public function testCloseAlreadyClosedChannel(): void
     {
+        /** @var Channel $channel */
+        $channel = wait($this->client->channel());
+
         $this->expectException(Exception\ChannelException::class);
 
-        wait($this->channel->close());
-        wait($this->channel->close());
+        wait($channel->close());
+        wait($channel->close());
     }
 
     public function testExchangeDeclare(): void
