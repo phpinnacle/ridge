@@ -15,7 +15,7 @@
     </coverage>
     <php>
         <ini name="error_reporting" value="-1"/>
-        <env name="RIDGE_TEST_DSN" value="amqp://guest:guest@localhost:5672?heartbeat=0"/>
+        <env name="RIDGE_TEST_DSN" value="amqp://guest:guest@localhost:5672/?heartbeat=0"/>
     </php>
     <testsuites>
         <testsuite name="PHPinnacle Test Suite">
