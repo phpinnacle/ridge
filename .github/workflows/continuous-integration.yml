@@ -67,7 +67,6 @@ jobs:
 
       - name: Run RabbitMQ
         uses: getong/rabbitmq-action@v1.2
-        continue-on-error: true
         with:
           rabbitmq version: 3.8.2-management-alpine
           rabbitmq user: guest
@@ -75,6 +74,7 @@ jobs:
           rabbitmq vhost: /
 
       - name: Run tests with phpunit
+        continue-on-error: true
         run: php ./vendor/bin/phpunit --configuration ./phpunit.xml --coverage-clover=coverage.clover
 
       - name: Docker info
