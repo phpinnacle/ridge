@@ -70,6 +70,7 @@ jobs:
       - name: Run RabbitMQ
         uses: getong/rabbitmq-action@v1.2
         with:
+          host port: 5672/tcp
           rabbitmq version: 3.8.2-management-alpine
           rabbitmq user: admin
           rabbitmq password: password
