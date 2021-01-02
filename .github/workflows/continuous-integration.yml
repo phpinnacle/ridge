@@ -48,6 +48,9 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    env:
+      PHP_EXTENSIONS: curl, mbstring, dom, intl, json, libxml, xml, xmlwriter, sockets
+
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -56,11 +59,11 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.0
-          coverage: pcov
+          extensions: ${{ env.PHP_EXTENSIONS }}
           tools: composer:v2
 
       - name: Install dependencies
-        run: composer install -ov
+        run: composer update -ov
 
       - name: Run RabbitMQ
         uses: getong/rabbitmq-action@v1.2
@@ -71,9 +74,6 @@ jobs:
 
       - name: Run tests with phpunit
         run: php ./vendor/bin/phpunit --configuration ./phpunit.xml --coverage-clover=coverage.clover
-
-      - name: Run docker info
-        run: docker logs objective_mendeleev
 
       - name: Upload coverage file
         uses: actions/upload-artifact@v2
