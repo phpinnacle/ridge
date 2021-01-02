@@ -19,11 +19,10 @@ use Amp\Promise;
 
 final class Client
 {
-    private const
-        STATE_NOT_CONNECTED = 0,
-        STATE_CONNECTING = 1,
-        STATE_CONNECTED = 2,
-        STATE_DISCONNECTING = 3;
+    private const STATE_NOT_CONNECTED = 0;
+    private const STATE_CONNECTING    = 1;
+    private const STATE_CONNECTED     = 2;
+    private const STATE_DISCONNECTING = 3;
 
     /**
      * @var Config
@@ -97,10 +96,8 @@ final class Client
 
                 $this->connection = new Connection($this->config->uri());
 
-                $timeout = $this->config->timeout;
-
                 yield $this->connection->open(
-                    $timeout,
+                    $this->config->timeout,
                     $this->config->tcpAttempts,
                     $this->config->tcpNoDelay
                 );

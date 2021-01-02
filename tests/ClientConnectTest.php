@@ -19,6 +19,20 @@ use function Amp\Promise\wait;
 
 class ClientConnectTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Loop::run();
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        Loop::stop();
+    }
+
     public function testConnect(): void
     {
         $client = new Client(

@@ -39,6 +39,8 @@ class ChannelTest extends TestCase
     {
         parent::setUp();
 
+        Loop::run();
+
         $this->client = new Client(
             Config::parse(\getenv('RIDGE_TEST_DSN'))
         );
@@ -62,6 +64,8 @@ class ChannelTest extends TestCase
         }
 
         wait($this->client->disconnect());
+
+        Loop::stop();
     }
 
     public function testOpenNotReadyChannel(): void
