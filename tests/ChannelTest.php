@@ -22,7 +22,7 @@ class ChannelTest extends AsyncTest
 {
     public function testOpenNotReadyChannel(Client $client)
     {
-        self::expectException(Exception\ChannelException::class);
+        $this->expectException(Exception\ChannelException::class);
 
         /** @var Channel $channel */
         $channel = yield $client->channel();
@@ -52,7 +52,7 @@ class ChannelTest extends AsyncTest
 
     public function testCloseAlreadyClosedChannel(Client $client)
     {
-        self::expectException(Exception\ChannelException::class);
+        $this->expectException(Exception\ChannelException::class);
 
         /** @var Channel $channel */
         $channel = yield $client->channel();
@@ -211,14 +211,14 @@ class ChannelTest extends AsyncTest
         });
 
         $channel->events()->onReturn(function (Message $message) use ($deferred, $watcher) {
-            self::assertSame($message->content(), '.');
-            self::assertSame($message->exchange(), '');
-            self::assertSame($message->routingKey(), '404');
-            self::assertSame($message->headers(), []);
-            self::assertNull($message->consumerTag());
-            self::assertNull($message->deliveryTag());
-            self::assertFalse($message->redelivered());
-            self::assertTrue($message->returned());
+            self::assertSame($message->content, '.');
+            self::assertSame($message->exchange, '');
+            self::assertSame($message->routingKey, '404');
+            self::assertSame($message->headers, []);
+            self::assertNull($message->consumerTag);
+            self::assertNull($message->deliveryTag);
+            self::assertFalse($message->redelivered);
+            self::assertTrue($message->returned);
 
             Loop::cancel($watcher);
 
@@ -252,7 +252,7 @@ class ChannelTest extends AsyncTest
         });
 
         $channel->events()->onReturn(function (Message $message) use ($deferred, $watcher) {
-            self::assertTrue($message->returned());
+            self::assertTrue($message->returned);
 
             Loop::cancel($watcher);
 
@@ -274,11 +274,10 @@ class ChannelTest extends AsyncTest
 
         yield $channel->queueDeclare('test_queue', false, false, false, true);
         yield $channel->publish('hi', '', 'test_queue');
-    
-        /** @noinspection PhpUnusedLocalVariableInspection */
+
         $tag = yield $channel->consume(function (Message $message) use ($client, &$tag) {
-            self::assertEquals('hi', $message->content());
-            self::assertEquals($tag, $message->consumerTag());
+            self::assertEquals('hi', $message->content);
+            self::assertEquals($tag, $message->consumerTag);
 
             yield $client->disconnect();
         }, 'test_queue', false, true);
@@ -318,7 +317,7 @@ class ChannelTest extends AsyncTest
         yield $channel->consume(function (Message $message) use ($client) {
             self::assertEquals('text/html', $message->header('content-type'));
             self::assertEquals('value', $message->header('custom'));
-            self::assertEquals('<b>hi html</b>', $message->content());
+            self::assertEquals('<b>hi html</b>', $message->content);
 
             yield $client->disconnect();
         }, 'test_queue', false, true);
@@ -338,13 +337,13 @@ class ChannelTest extends AsyncTest
 
         self::assertNotNull($message1);
         self::assertInstanceOf(Message::class, $message1);
-        self::assertEquals('', $message1->exchange());
-        self::assertEquals('.', $message1->content());
-        self::assertEquals('get_test', $message1->routingKey());
-        self::assertEquals(1, $message1->deliveryTag());
-        self::assertNull($message1->consumerTag());
-        self::assertFalse($message1->redelivered());
-        self::assertIsArray($message1->headers());
+        self::assertEquals('', $message1->exchange);
+        self::assertEquals('.', $message1->content);
+        self::assertEquals('get_test', $message1->routingKey);
+        self::assertEquals(1, $message1->deliveryTag);
+        self::assertNull($message1->consumerTag);
+        self::assertFalse($message1->redelivered);
+        self::assertIsArray($message1->headers);
 
         self::assertNull(yield $channel->get('get_test', true));
 
@@ -354,8 +353,8 @@ class ChannelTest extends AsyncTest
         $message2 = yield $channel->get('get_test');
 
         self::assertNotNull($message2);
-        self::assertEquals(2, $message2->deliveryTag());
-        self::assertFalse($message2->redelivered());
+        self::assertEquals(2, $message2->deliveryTag);
+        self::assertFalse($message2->redelivered);
 
         $client->disconnect()->onResolve(function () use ($client) {
             yield $client->connect();
@@ -368,9 +367,9 @@ class ChannelTest extends AsyncTest
 
             self::assertNotNull($message3);
             self::assertInstanceOf(Message::class, $message3);
-            self::assertEquals('', $message3->exchange());
-            self::assertEquals('..', $message3->content());
-            self::assertTrue($message3->redelivered());
+            self::assertEquals('', $message3->exchange);
+            self::assertEquals('..', $message3->content);
+            self::assertTrue($message3->redelivered);
 
             yield $channel->ack($message3);
 
@@ -409,7 +408,7 @@ class ChannelTest extends AsyncTest
         $message = yield $channel->get('test_queue');
 
         self::assertNotNull($message);
-        self::assertFalse($message->redelivered());
+        self::assertFalse($message->redelivered);
 
         $promise = $channel->nack($message);
 
@@ -421,7 +420,7 @@ class ChannelTest extends AsyncTest
         $message = yield $channel->get('test_queue');
 
         self::assertNotNull($message);
-        self::assertTrue($message->redelivered());
+        self::assertTrue($message->redelivered);
 
         yield $channel->nack($message, false, false);
 
@@ -442,7 +441,7 @@ class ChannelTest extends AsyncTest
         $message = yield $channel->get('test_queue');
 
         self::assertNotNull($message);
-        self::assertFalse($message->redelivered());
+        self::assertFalse($message->redelivered);
 
         $promise = $channel->reject($message);
 
@@ -454,7 +453,7 @@ class ChannelTest extends AsyncTest
         $message = yield $channel->get('test_queue');
 
         self::assertNotNull($message);
-        self::assertTrue($message->redelivered());
+        self::assertTrue($message->redelivered);
 
         yield $channel->reject($message, false);
 
@@ -475,7 +474,7 @@ class ChannelTest extends AsyncTest
         $message = yield $channel->get('test_queue');
 
         self::assertNotNull($message);
-        self::assertFalse($message->redelivered());
+        self::assertFalse($message->redelivered);
 
         $promise = $channel->recover(true);
 
@@ -487,7 +486,7 @@ class ChannelTest extends AsyncTest
         $message = yield $channel->get('test_queue');
 
         self::assertNotNull($message);
-        self::assertTrue($message->redelivered());
+        self::assertTrue($message->redelivered);
 
         yield $channel->ack($message);
 
@@ -506,7 +505,7 @@ class ChannelTest extends AsyncTest
         yield $channel->publish($body, '', 'test_queue');
 
         yield $channel->consume(function (Message $message, Channel $channel) use ($body, $client) {
-            self::assertEquals(\strlen($body), \strlen($message->content()));
+            self::assertEquals(\strlen($body), \strlen($message->content));
 
             yield $channel->ack($message);
             yield $client->disconnect();
@@ -515,7 +514,7 @@ class ChannelTest extends AsyncTest
 
     public function testGetDouble(Client $client)
     {
-        self::expectException(Exception\ChannelException::class);
+        $this->expectException(Exception\ChannelException::class);
 
         /** @var Channel $channel */
         $channel = yield $client->channel();
@@ -547,12 +546,12 @@ class ChannelTest extends AsyncTest
         $message = yield $channel->get('empty_body_message_test', true);
 
         self::assertNotNull($message);
-        self::assertEquals('', $message->content());
+        self::assertEquals('', $message->content);
 
         $count = 0;
 
         yield $channel->consume(function (Message $message, Channel $channel) use ($client, &$count) {
-            self::assertEmpty($message->content());
+            self::assertEmpty($message->content);
 
             yield $channel->ack($message);
 
@@ -581,7 +580,7 @@ class ChannelTest extends AsyncTest
 
         self::assertNotNull($message);
         self::assertInstanceOf(Message::class, $message);
-        self::assertEquals('.', $message->content());
+        self::assertEquals('.', $message->content);
 
         $channel->publish('..', '', 'tx_test');
         $channel->txRollback();
@@ -595,7 +594,7 @@ class ChannelTest extends AsyncTest
 
     public function testTxSelectCannotBeCalledMultipleTimes(Client $client)
     {
-        self::expectException(Exception\ChannelException::class);
+        $this->expectException(Exception\ChannelException::class);
 
         /** @var Channel $channel */
         $channel = yield $client->channel();
@@ -610,7 +609,7 @@ class ChannelTest extends AsyncTest
 
     public function testTxCommitCannotBeCalledUnderNotTransactionMode(Client $client)
     {
-        self::expectException(Exception\ChannelException::class);
+        $this->expectException(Exception\ChannelException::class);
 
         /** @var Channel $channel */
         $channel = yield $client->channel();
@@ -624,7 +623,7 @@ class ChannelTest extends AsyncTest
 
     public function testTxRollbackCannotBeCalledUnderNotTransactionMode(Client $client)
     {
-        self::expectException(Exception\ChannelException::class);
+        $this->expectException(Exception\ChannelException::class);
 
         /** @var Channel $channel */
         $channel = yield $client->channel();
