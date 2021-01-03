@@ -80,35 +80,4 @@ jobs:
         uses: jakejarvis/wait-action@master
 
       - name: Run tests with phpunit
-        run: XDEBUG_MODE=coverage php ./vendor/bin/phpunit --configuration ./phpunit.xml --coverage-clover=coverage.clover
-
-      - name: Upload coverage file
-        uses: actions/upload-artifact@v2
-        with:
-          name: phpunit.coverage
-          path: coverage.clover
-
-  upload_coverage:
-    name: Upload coverage
-    runs-on: ubuntu-latest
-    needs: phpunit
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Install PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: 7.4
-          coverage: none
-          tools: composer
-
-      - name: Download coverage files
-        uses: actions/download-artifact@v2
-        with:
-          path: reports
-
-      - name: Send code coverage report to Scrutinizer
-        run: |
-          wget https://scrutinizer-ci.com/ocular.phar
-          php ocular.phar code-coverage:upload --format=php-clover ./reports/phpunit.coverage/coverage.clover
+        run: php ./vendor/bin/phpunit --configuration ./phpunit.xml

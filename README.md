@@ -2,8 +2,8 @@
 
 [![Latest Version on Packagist][ico-version]][link-packagist]
 [![Software License][ico-license]](LICENSE.md)
-[![Coverage Status][ico-scrutinizer]][link-scrutinizer]
-[![Quality Score][ico-code-quality]][link-code-quality]
+![Continuous Integration](https://github.com/phpinnacle/ridge/workflows/Continuous%20Integration/badge.svg)
+[![Shepherd](https://shepherd.dev/github/phpinnacle/ridge/coverage.svg)](https://shepherd.dev/github/phpinnacle/ridge)
 [![Total Downloads][ico-downloads]][link-downloads]
 
 This library is a pure asynchronous PHP implementation of the AMQP 0-9-1 protocol.
