@@ -19,7 +19,7 @@ class BasicCancelOkFrame extends MethodFrame
      * @var string
      */
     public $consumerTag;
-    
+
     public function __construct()
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_CANCEL_OK);
@@ -32,7 +32,7 @@ class BasicCancelOkFrame extends MethodFrame
     {
         $self = new self;
         $self->consumerTag = $buffer->consumeString();
-        
+
         return $self;
     }
 
@@ -40,7 +40,7 @@ class BasicCancelOkFrame extends MethodFrame
     {
         $buffer = parent::pack();
         $buffer->appendString($this->consumerTag);
-        
+
         return $buffer;
     }
 }

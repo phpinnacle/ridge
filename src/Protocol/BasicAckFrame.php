@@ -27,17 +27,17 @@ class BasicAckFrame extends AcknowledgmentFrame
     {
         $self = new self;
         $self->deliveryTag = $buffer->consumeInt64();
-        [$self->multiple]  = $buffer->consumeBits(1);
-        
+        [$self->multiple] = $buffer->consumeBits(1);
+
         return $self;
     }
-    
+
     public function pack(): Buffer
     {
         $buffer = parent::pack();
         $buffer->appendInt64($this->deliveryTag);
         $buffer->appendBits([$this->multiple]);
-        
+
         return $buffer;
     }
 }

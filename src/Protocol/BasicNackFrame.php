@@ -30,7 +30,7 @@ class BasicNackFrame extends AcknowledgmentFrame
      */
     public static function unpack(Buffer $buffer): self
     {
-        $self              = new self;
+        $self = new self;
         $self->deliveryTag = $buffer->consumeInt64();
 
         [$self->multiple, $self->requeue] = $buffer->consumeBits(2);
@@ -43,7 +43,7 @@ class BasicNackFrame extends AcknowledgmentFrame
         $buffer = parent::pack();
         $buffer->appendInt64($this->deliveryTag);
         $buffer->appendBits([$this->multiple, $this->requeue]);
-        
+
         return $buffer;
     }
 }

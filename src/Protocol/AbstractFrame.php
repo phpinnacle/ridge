@@ -36,9 +36,9 @@ abstract class AbstractFrame
 
     public function __construct(?int $type = null, ?int $channel = null, ?int $size = null, ?string $payload = null)
     {
-        $this->type    = $type;
+        $this->type = $type;
         $this->channel = $channel;
-        $this->size    = $size;
+        $this->size = $size;
         $this->payload = $payload;
     }
 }

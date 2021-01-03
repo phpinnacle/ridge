@@ -32,8 +32,8 @@ class BasicRejectFrame extends AcknowledgmentFrame
     {
         $self = new self;
         $self->deliveryTag = $buffer->consumeInt64();
-        [$self->requeue]   = $buffer->consumeBits(1);
-        
+        [$self->requeue] = $buffer->consumeBits(1);
+
         return $self;
     }
 
@@ -42,7 +42,7 @@ class BasicRejectFrame extends AcknowledgmentFrame
         $buffer = parent::pack();
         $buffer->appendInt64($this->deliveryTag);
         $buffer->appendBits([$this->requeue]);
-        
+
         return $buffer;
     }
 }

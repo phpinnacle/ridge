@@ -37,8 +37,8 @@ class BasicCancelFrame extends MethodFrame
     {
         $self = new self;
         $self->consumerTag = $buffer->consumeString();
-        [$self->nowait]    = $buffer->consumeBits(1);
-        
+        [$self->nowait] = $buffer->consumeBits(1);
+
         return $self;
     }
 
@@ -47,7 +47,7 @@ class BasicCancelFrame extends MethodFrame
         $buffer = parent::pack();
         $buffer->appendString($this->consumerTag);
         $buffer->appendBits([$this->nowait]);
-        
+
         return $buffer;
     }
 }

@@ -58,7 +58,7 @@ class ConnectionStartFrame extends MethodFrame
      */
     public static function unpack(Buffer $buffer): self
     {
-        $self               = new self;
+        $self = new self;
         $self->versionMajor = $buffer->consumeUint8();
         $self->versionMinor = $buffer->consumeUint8();
 
@@ -73,8 +73,8 @@ class ConnectionStartFrame extends MethodFrame
         $serverProperties = $buffer->consumeTable();
 
         $self->serverProperties = $serverProperties;
-        $self->mechanisms       = $buffer->consumeText();
-        $self->locales          = $buffer->consumeText();
+        $self->mechanisms = $buffer->consumeText();
+        $self->locales = $buffer->consumeText();
 
         return $self;
     }

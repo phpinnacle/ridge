@@ -19,7 +19,7 @@ class ConfirmSelectFrame extends MethodFrame
      * @var bool
      */
     public $nowait = false;
-    
+
     public function __construct()
     {
         parent::__construct(Constants::CLASS_CONFIRM, Constants::METHOD_CONFIRM_SELECT);
@@ -32,7 +32,7 @@ class ConfirmSelectFrame extends MethodFrame
     {
         $self = new self;
         [$self->nowait] = $buffer->consumeBits(1);
-        
+
         return $self;
     }
 
@@ -40,7 +40,7 @@ class ConfirmSelectFrame extends MethodFrame
     {
         $buffer = parent::pack();
         $buffer->appendBits([$this->nowait]);
-        
+
         return $buffer;
     }
 }

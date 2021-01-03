@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace PHPinnacle\Ridge;
 
@@ -28,7 +28,7 @@ final class Events
 
     public function __construct(Channel $channel, MessageReceiver $receiver)
     {
-        $this->channel  = $channel;
+        $this->channel = $channel;
         $this->receiver = $receiver;
     }
 
@@ -49,10 +49,8 @@ final class Events
     public function onReturn(callable $listener): self
     {
         $this->receiver->onMessage(
-            function(Message $message) use ($listener)
-            {
-                if(!$message->returned())
-                {
+            function (Message $message) use ($listener) {
+                if (!$message->returned) {
                     return;
                 }
 
@@ -71,8 +69,7 @@ final class Events
     {
         $this->receiver->onFrame(
             $frame,
-            function(Protocol\AcknowledgmentFrame $frame) use ($callback)
-            {
+            function (Protocol\AcknowledgmentFrame $frame) use ($callback) {
                 /** @psalm-suppress MixedArgumentTypeCoercion */
                 asyncCall($callback, $frame->deliveryTag, $frame->multiple, $this->channel);
             }

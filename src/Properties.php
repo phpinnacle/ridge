@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace PHPinnacle\Ridge;
 
@@ -63,9 +63,9 @@ final class Properties
      */
     public function __construct(string $platform, string $product, string $version, array $capabilities)
     {
-        $this->platform     = $platform;
-        $this->product      = $product;
-        $this->version      = $version;
+        $this->platform = $platform;
+        $this->product = $product;
+        $this->version = $version;
         $this->capabilities = $capabilities;
     }
 
@@ -90,7 +90,7 @@ final class Properties
     public function tune(int $maxChannel, int $maxFrame): void
     {
         $this->maxChannel = $maxChannel;
-        $this->maxFrame   = $maxFrame;
+        $this->maxFrame = $maxFrame;
     }
 
     public function capable(string $ability): bool

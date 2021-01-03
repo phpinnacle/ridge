@@ -29,11 +29,11 @@ class ConnectionTuneOkFrame extends MethodFrame
      * @var int
      */
     public $heartbeat = 0;
-    
+
     public function __construct()
     {
         parent::__construct(Constants::CLASS_CONNECTION, Constants::METHOD_CONNECTION_TUNE_OK);
-    
+
         $this->channel = Constants::CONNECTION_CHANNEL;
     }
 
@@ -44,9 +44,9 @@ class ConnectionTuneOkFrame extends MethodFrame
     {
         $self = new self;
         $self->channelMax = $buffer->consumeInt16();
-        $self->frameMax   = $buffer->consumeInt32();
-        $self->heartbeat  = $buffer->consumeInt16();
-        
+        $self->frameMax = $buffer->consumeInt32();
+        $self->heartbeat = $buffer->consumeInt16();
+
         return $self;
     }
 
@@ -56,7 +56,7 @@ class ConnectionTuneOkFrame extends MethodFrame
         $buffer->appendInt16($this->channelMax);
         $buffer->appendInt32($this->frameMax);
         $buffer->appendInt16($this->heartbeat);
-        
+
         return $buffer;
     }
 }

@@ -42,9 +42,9 @@ class QueuePurgeFrame extends MethodFrame
     {
         $self = new self;
         $self->reserved1 = $buffer->consumeInt16();
-        $self->queue     = $buffer->consumeString();
-        [$self->nowait]  = $buffer->consumeBits(1);
-        
+        $self->queue = $buffer->consumeString();
+        [$self->nowait] = $buffer->consumeBits(1);
+
         return $self;
     }
 
@@ -54,7 +54,7 @@ class QueuePurgeFrame extends MethodFrame
         $buffer->appendInt16($this->reserved1);
         $buffer->appendString($this->queue);
         $buffer->appendBits([$this->nowait]);
-        
+
         return $buffer;
     }
 }

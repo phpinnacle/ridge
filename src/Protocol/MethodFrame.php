@@ -29,7 +29,7 @@ class MethodFrame extends AbstractFrame
     {
         parent::__construct(Constants::FRAME_METHOD);
 
-        $this->classId  = $classId;
+        $this->classId = $classId;
         $this->methodId = $methodId;
     }
 
@@ -37,8 +37,8 @@ class MethodFrame extends AbstractFrame
     {
         $buffer = new Buffer;
         $buffer
-            ->appendUint16((int) $this->classId)
-            ->appendUint16((int) $this->methodId);
+            ->appendUint16((int)$this->classId)
+            ->appendUint16((int)$this->methodId);
 
         return $buffer;
     }

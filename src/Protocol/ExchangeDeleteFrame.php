@@ -46,12 +46,12 @@ class ExchangeDeleteFrame extends MethodFrame
     public static function unpack(Buffer $buffer): self
     {
         $self = new self;
-    
+
         $self->reserved1 = $buffer->consumeInt16();
-        $self->exchange  = $buffer->consumeString();
-    
+        $self->exchange = $buffer->consumeString();
+
         [$self->ifUnused, $self->nowait] = $buffer->consumeBits(2);
-        
+
         return $self;
     }
 
@@ -61,7 +61,7 @@ class ExchangeDeleteFrame extends MethodFrame
         $buffer->appendInt16($this->reserved1);
         $buffer->appendString($this->exchange);
         $buffer->appendBits([$this->ifUnused, $this->nowait]);
-        
+
         return $buffer;
     }
 }

@@ -30,7 +30,7 @@ class BasicConsumeOkFrame extends MethodFrame
      */
     public static function unpack(Buffer $buffer): self
     {
-        $self              = new self;
+        $self = new self;
         $self->consumerTag = $buffer->consumeString();
 
         return $self;

@@ -21,7 +21,7 @@
     "php": ">=8.0",
     "amphp/amp": "v2.5.*",
     "amphp/socket": "v1.1.*",
-    "phpinnacle/buffer": "v1.1.*"
+    "phpinnacle/buffer": "v1.2.*"
   },
   "require-dev": {
     "phpunit/phpunit": "v9.5.*",

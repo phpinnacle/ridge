@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace PHPinnacle\Ridge;
 
@@ -31,8 +31,8 @@ final class Queue
 
     public function __construct(string $name, int $messages, int $consumers)
     {
-        $this->name      = $name;
-        $this->messages  = $messages;
+        $this->name = $name;
+        $this->messages = $messages;
         $this->consumers = $consumers;
     }
 

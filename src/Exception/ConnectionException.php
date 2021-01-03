@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace PHPinnacle\Ridge\Exception;
 
@@ -21,7 +21,7 @@ final class ConnectionException extends RidgeException
     {
         return new self(
             \sprintf('Error writing to socket: %s', $previous->getMessage()),
-            (int) $previous->getCode(),
+            (int)$previous->getCode(),
             $previous
         );
     }

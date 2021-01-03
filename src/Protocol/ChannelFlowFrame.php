@@ -32,10 +32,10 @@ class ChannelFlowFrame extends MethodFrame
     {
         $self = new self;
         [$self->active] = $buffer->consumeBits(1);
-        
+
         return $self;
     }
-    
+
     public function pack(): Buffer
     {
         $buffer = parent::pack();

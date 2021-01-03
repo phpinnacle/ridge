@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace PHPinnacle\Ridge;
 
@@ -34,22 +34,19 @@ final class Consumer
 
     public function __construct(Channel $channel, MessageReceiver $receiver)
     {
-        $this->channel  = $channel;
+        $this->channel = $channel;
         $this->receiver = $receiver;
     }
 
     public function start(): void
     {
         $this->receiver->onMessage(
-            function(Message $message)
-            {
-                if(!$tag = $message->consumerTag())
-                {
+            function (Message $message) {
+                if (!$tag = $message->consumerTag) {
                     return;
                 }
 
-                if(!isset($this->listeners[$tag]))
-                {
+                if (!isset($this->listeners[$tag])) {
                     return;
                 }
 

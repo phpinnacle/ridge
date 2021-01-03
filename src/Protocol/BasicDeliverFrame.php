@@ -30,11 +30,11 @@ class BasicDeliverFrame extends MessageFrame
      */
     public static function unpack(Buffer $buffer): self
     {
-        $self              = new self;
+        $self = new self;
         $self->consumerTag = $buffer->consumeString();
         $self->deliveryTag = $buffer->consumeInt64();
         [$self->redelivered] = $buffer->consumeBits(1);
-        $self->exchange   = $buffer->consumeString();
+        $self->exchange = $buffer->consumeString();
         $self->routingKey = $buffer->consumeString();
 
         return $self;

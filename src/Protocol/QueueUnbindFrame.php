@@ -51,12 +51,12 @@ class QueueUnbindFrame extends MethodFrame
     public static function unpack(Buffer $buffer): self
     {
         $self = new self;
-        $self->reserved1  = $buffer->consumeInt16();
-        $self->queue      = $buffer->consumeString();
-        $self->exchange   = $buffer->consumeString();
+        $self->reserved1 = $buffer->consumeInt16();
+        $self->queue = $buffer->consumeString();
+        $self->exchange = $buffer->consumeString();
         $self->routingKey = $buffer->consumeString();
-        $self->arguments  = $buffer->consumeTable();
-        
+        $self->arguments = $buffer->consumeTable();
+
         return $self;
     }
 
@@ -68,7 +68,7 @@ class QueueUnbindFrame extends MethodFrame
         $buffer->appendString($this->exchange);
         $buffer->appendString($this->routingKey);
         $buffer->appendTable($this->arguments);
-        
+
         return $buffer;
     }
 }

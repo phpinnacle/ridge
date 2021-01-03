@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace PHPinnacle\Ridge\Exception;
 
@@ -18,7 +18,7 @@ final class ClientException extends RidgeException
 {
     public static function unexpectedResponse(\Throwable $error): self
     {
-        return new self('Unexpected response.', (int) $error->getCode(), $error);
+        return new self('Unexpected response.', (int)$error->getCode(), $error);
     }
 
     public static function notConnected(): self

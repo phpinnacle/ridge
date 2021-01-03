@@ -66,17 +66,17 @@ class BasicConsumeFrame extends MethodFrame
     public static function unpack(Buffer $buffer): self
     {
         $self = new self;
-        $self->reserved1   = $buffer->consumeInt16();
-        $self->queue       = $buffer->consumeString();
+        $self->reserved1 = $buffer->consumeInt16();
+        $self->queue = $buffer->consumeString();
         $self->consumerTag = $buffer->consumeString();
-    
+
         [$self->noLocal, $self->noAck, $self->exclusive, $self->nowait] = $buffer->consumeBits(4);
-    
+
         $self->arguments = $buffer->consumeTable();
-        
+
         return $self;
     }
-    
+
     public function pack(): Buffer
     {
         $buffer = parent::pack();
@@ -85,7 +85,7 @@ class BasicConsumeFrame extends MethodFrame
         $buffer->appendString($this->consumerTag);
         $buffer->appendBits([$this->noLocal, $this->noAck, $this->exclusive, $this->nowait]);
         $buffer->appendTable($this->arguments);
-        
+
         return $buffer;
     }
 }

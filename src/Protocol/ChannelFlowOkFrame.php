@@ -32,7 +32,7 @@ class ChannelFlowOkFrame extends MethodFrame
     {
         $self = new self;
         [$self->active] = $buffer->consumeBits(1);
-        
+
         return $self;
     }
 
@@ -40,7 +40,7 @@ class ChannelFlowOkFrame extends MethodFrame
     {
         $buffer = parent::pack();
         $buffer->appendBits([$this->active]);
-        
+
         return $buffer;
     }
 }

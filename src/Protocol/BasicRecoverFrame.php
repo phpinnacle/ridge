@@ -19,7 +19,7 @@ class BasicRecoverFrame extends MethodFrame
      * @var bool
      */
     public $requeue = false;
-    
+
     public function __construct()
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_RECOVER);
@@ -32,7 +32,7 @@ class BasicRecoverFrame extends MethodFrame
     {
         $self = new self;
         [$self->requeue] = $buffer->consumeBits(1);
-        
+
         return $self;
     }
 
@@ -40,7 +40,7 @@ class BasicRecoverFrame extends MethodFrame
     {
         $buffer = parent::pack();
         $buffer->appendBits([$this->requeue]);
-        
+
         return $buffer;
     }
 }

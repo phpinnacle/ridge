@@ -32,7 +32,7 @@ class QueuePurgeOkFrame extends MethodFrame
     {
         $self = new self;
         $self->messageCount = $buffer->consumeInt32();
-        
+
         return $self;
     }
 
@@ -40,7 +40,7 @@ class QueuePurgeOkFrame extends MethodFrame
     {
         $buffer = parent::pack();
         $buffer->appendInt32($this->messageCount);
-        
+
         return $buffer;
     }
 }

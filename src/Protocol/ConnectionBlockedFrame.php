@@ -23,7 +23,7 @@ class ConnectionBlockedFrame extends MethodFrame
     public function __construct()
     {
         parent::__construct(Constants::CLASS_CONNECTION, Constants::METHOD_CONNECTION_BLOCKED);
-    
+
         $this->channel = Constants::CONNECTION_CHANNEL;
     }
 
@@ -34,7 +34,7 @@ class ConnectionBlockedFrame extends MethodFrame
     {
         $self = new self;
         $self->reason = $buffer->consumeString();
-        
+
         return $self;
     }
 
@@ -42,7 +42,7 @@ class ConnectionBlockedFrame extends MethodFrame
     {
         $buffer = parent::pack();
         $buffer->appendString($this->reason);
-        
+
         return $buffer;
     }
 }

@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace PHPinnacle\Ridge;
 
@@ -20,8 +20,8 @@ use Amp\Promise;
 final class Client
 {
     private const STATE_NOT_CONNECTED = 0;
-    private const STATE_CONNECTING    = 1;
-    private const STATE_CONNECTED     = 2;
+    private const STATE_CONNECTING = 1;
+    private const STATE_CONNECTED = 2;
     private const STATE_DISCONNECTING = 3;
 
     /**
@@ -69,8 +69,7 @@ final class Client
      */
     public function properties(): Properties
     {
-        if($this->state !== self::STATE_CONNECTED)
-        {
+        if ($this->state !== self::STATE_CONNECTED) {
             throw Exception\ClientException::notConnected();
         }
 
@@ -85,10 +84,8 @@ final class Client
     public function connect(): Promise
     {
         return call(
-            function()
-            {
-                if($this->state !== self::STATE_NOT_CONNECTED)
-                {
+            function () {
+                if ($this->state !== self::STATE_NOT_CONNECTED) {
                     throw Exception\ClientException::alreadyConnected();
                 }
 
@@ -117,8 +114,7 @@ final class Client
                 yield $this->connectionOpen();
 
                 asyncCall(
-                    function()
-                    {
+                    function () {
                         yield $this->await(Protocol\ConnectionCloseFrame::class);
 
                         $buffer = new Buffer;
@@ -148,26 +144,21 @@ final class Client
     public function disconnect(int $code = 0, string $reason = ''): Promise
     {
         return call(
-            function() use ($code, $reason)
-            {
-                if(\in_array($this->state, [self::STATE_NOT_CONNECTED, self::STATE_DISCONNECTING]))
-                {
+            function () use ($code, $reason) {
+                if (\in_array($this->state, [self::STATE_NOT_CONNECTED, self::STATE_DISCONNECTING])) {
                     return;
                 }
 
-                if($this->state !== self::STATE_CONNECTED)
-                {
+                if ($this->state !== self::STATE_CONNECTED) {
                     throw Exception\ClientException::notConnected();
                 }
 
                 $this->state = self::STATE_DISCONNECTING;
 
-                if($code === 0)
-                {
+                if ($code === 0) {
                     $promises = [];
 
-                    foreach($this->channels as $id => $channel)
-                    {
+                    foreach ($this->channels as $id => $channel) {
                         $promises[] = $channel->close($code, $reason);
                     }
 
@@ -191,16 +182,13 @@ final class Client
     public function channel(): Promise
     {
         return call(
-            function()
-            {
-                if($this->state !== self::STATE_CONNECTED)
-                {
+            function () {
+                if ($this->state !== self::STATE_CONNECTED) {
                     throw Exception\ClientException::notConnected();
                 }
 
-                try
-                {
-                    $id      = $this->findChannelId();
+                try {
+                    $id = $this->findChannelId();
                     $channel = new Channel($id, $this->connection, $this->properties);
 
                     $this->channels[$id] = $channel;
@@ -208,8 +196,7 @@ final class Client
                     yield $channel->open();
                     yield $channel->qos($this->config->qosSize, $this->config->qosCount, $this->config->qosGlobal);
 
-                    asyncCall(function() use ($id)
-                    {
+                    asyncCall(function () use ($id) {
                         /** @var Protocol\ChannelCloseFrame|Protocol\ChannelCloseOkFrame $frame */
                         $frame = yield Promise\first([
                             $this->await(Protocol\ChannelCloseFrame::class, $id),
@@ -218,8 +205,7 @@ final class Client
 
                         $this->connection->cancel($id);
 
-                        if($frame instanceof Protocol\ChannelCloseFrame)
-                        {
+                        if ($frame instanceof Protocol\ChannelCloseFrame) {
                             $buffer = new Buffer;
                             $buffer
                                 ->appendUint8(1)
@@ -236,9 +222,7 @@ final class Client
                     });
 
                     return $channel;
-                }
-                catch(\Throwable $error)
-                {
+                } catch (\Throwable $error) {
                     throw Exception\ClientException::unexpectedResponse($error);
                 }
             }
@@ -258,13 +242,11 @@ final class Client
     private function connectionStart(): Promise
     {
         return call(
-            function()
-            {
+            function () {
                 /** @var Protocol\ConnectionStartFrame $start */
                 $start = yield $this->await(Protocol\ConnectionStartFrame::class);
 
-                if(!\str_contains($start->mechanisms, 'AMQPLAIN'))
-                {
+                if (!\str_contains($start->mechanisms, 'AMQPLAIN')) {
                     throw Exception\ClientException::notSupported($start->mechanisms);
                 }
 
@@ -273,7 +255,7 @@ final class Client
                 $buffer = new Buffer;
                 $buffer
                     ->appendTable([
-                        'LOGIN'    => $this->config->user,
+                        'LOGIN' => $this->config->user,
                         'PASSWORD' => $this->config->pass,
                     ])
                     ->discard(4);
@@ -284,7 +266,7 @@ final class Client
                     ->appendUint16(11)
                     ->appendTable([])
                     ->appendString('AMQPLAIN')
-                    ->appendText((string) $buffer)
+                    ->appendText((string)$buffer)
                     ->appendString('en_US');
 
                 return $this->connection->method(0, $frameBuffer);
@@ -298,20 +280,18 @@ final class Client
     private function connectionTune(): Promise
     {
         return call(
-            function()
-            {
+            function () {
                 /** @var Protocol\ConnectionTuneFrame $tune */
                 $tune = yield $this->await(Protocol\ConnectionTuneFrame::class);
 
                 $heartbeatInterval = $this->config->heartbeat;
 
-                if($heartbeatInterval !== 0)
-                {
+                if ($heartbeatInterval !== 0) {
                     $heartbeatInterval = \min($heartbeatInterval, $tune->heartbeat);
                 }
 
                 $maxChannel = \min($this->config->maxChannel, $tune->channelMax);
-                $maxFrame   = \min($this->config->maxFrame, $tune->frameMax);
+                $maxFrame = \min($this->config->maxFrame, $tune->frameMax);
 
                 $buffer = new Buffer;
                 $buffer
@@ -329,8 +309,7 @@ final class Client
 
                 $this->properties->tune($maxChannel, $maxFrame);
 
-                if($heartbeatInterval > 0)
-                {
+                if ($heartbeatInterval > 0) {
                     $this->connection->heartbeat($heartbeatInterval);
                 }
             }
@@ -343,11 +322,10 @@ final class Client
     private function connectionOpen(): Promise
     {
         return call(
-            function()
-            {
-                $vhost        = $this->config->vhost;
+            function () {
+                $vhost = $this->config->vhost;
                 $capabilities = '';
-                $insist       = false;
+                $insist = false;
 
                 $buffer = new Buffer;
                 $buffer
@@ -374,8 +352,7 @@ final class Client
     private function connectionClose(int $code, string $reason): Promise
     {
         return call(
-            function() use ($code, $reason)
-            {
+            function () use ($code, $reason) {
                 $buffer = new Buffer;
                 $buffer
                     ->appendUint8(1)
@@ -402,10 +379,8 @@ final class Client
     private function findChannelId(): int
     {
         /** first check in range [next, max] ... */
-        for($id = $this->nextChannelId; $id <= $this->config->maxChannel; ++$id)
-        {
-            if(!isset($this->channels[$id]))
-            {
+        for ($id = $this->nextChannelId; $id <= $this->config->maxChannel; ++$id) {
+            if (!isset($this->channels[$id])) {
                 $this->nextChannelId = $id + 1;
 
                 return $id;
@@ -413,10 +388,8 @@ final class Client
         }
 
         /** then check in range [min, next) ... */
-        for($id = 1; $id < $this->nextChannelId; ++$id)
-        {
-            if(!isset($this->channels[$id]))
-            {
+        for ($id = 1; $id < $this->nextChannelId; ++$id) {
+            if (!isset($this->channels[$id])) {
                 $this->nextChannelId = $id + 1;
 
                 return $id;
@@ -441,8 +414,7 @@ final class Client
         $this->connection->subscribe(
             $channel,
             $frame,
-            static function(Protocol\AbstractFrame $frame) use ($deferred)
-            {
+            static function (Protocol\AbstractFrame $frame) use ($deferred) {
                 $deferred->resolve($frame);
 
                 return true;

@@ -52,10 +52,10 @@ class QueueDeleteFrame extends MethodFrame
     {
         $self = new self;
         $self->reserved1 = $buffer->consumeInt16();
-        $self->queue     = $buffer->consumeString();
-    
+        $self->queue = $buffer->consumeString();
+
         [$self->ifUnused, $self->ifEmpty, $self->nowait] = $buffer->consumeBits(3);
-        
+
         return $self;
     }
 
@@ -65,7 +65,7 @@ class QueueDeleteFrame extends MethodFrame
         $buffer->appendInt16($this->reserved1);
         $buffer->appendString($this->queue);
         $buffer->appendBits([$this->ifUnused, $this->ifEmpty, $this->nowait]);
-        
+
         return $buffer;
     }
 }

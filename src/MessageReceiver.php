@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace PHPinnacle\Ridge;
 
@@ -68,9 +68,9 @@ final class MessageReceiver
 
     public function __construct(Channel $channel, Connection $connection)
     {
-        $this->channel    = $channel;
+        $this->channel = $channel;
         $this->connection = $connection;
-        $this->buffer     = new Buffer;
+        $this->buffer = new Buffer;
     }
 
     public function start(): void
@@ -101,35 +101,32 @@ final class MessageReceiver
 
     public function receiveReturn(Protocol\BasicReturnFrame $frame): void
     {
-        if($this->state !== self::STATE_WAIT)
-        {
+        if ($this->state !== self::STATE_WAIT) {
             return;
         }
 
         $this->return = $frame;
-        $this->state  = self::STATE_HEAD;
+        $this->state = self::STATE_HEAD;
     }
 
     public function receiveDeliver(Protocol\BasicDeliverFrame $frame): void
     {
-        if($this->state !== self::STATE_WAIT)
-        {
+        if ($this->state !== self::STATE_WAIT) {
             return;
         }
 
         $this->deliver = $frame;
-        $this->state   = self::STATE_HEAD;
+        $this->state = self::STATE_HEAD;
     }
 
     public function receiveHeader(Protocol\ContentHeaderFrame $frame): void
     {
-        if($this->state !== self::STATE_HEAD)
-        {
+        if ($this->state !== self::STATE_HEAD) {
             return;
         }
 
-        $this->state     = self::STATE_BODY;
-        $this->header    = $frame;
+        $this->state = self::STATE_BODY;
+        $this->header = $frame;
         $this->remaining = $frame->bodySize;
 
         $this->runCallbacks();
@@ -137,17 +134,15 @@ final class MessageReceiver
 
     public function receiveBody(Protocol\ContentBodyFrame $frame): void
     {
-        if($this->state !== self::STATE_BODY)
-        {
+        if ($this->state !== self::STATE_BODY) {
             return;
         }
 
-        $this->buffer->append((string) $frame->payload);
+        $this->buffer->append((string)$frame->payload);
 
-        $this->remaining -= (int) $frame->size;
+        $this->remaining -= (int)$frame->size;
 
-        if($this->remaining < 0)
-        {
+        if ($this->remaining < 0) {
             throw Exception\ChannelException::bodyOverflow($this->remaining);
         }
 
@@ -159,13 +154,11 @@ final class MessageReceiver
      */
     private function runCallbacks(): void
     {
-        if($this->remaining !== 0)
-        {
+        if ($this->remaining !== 0) {
             return;
         }
 
-        if($this->return)
-        {
+        if ($this->return) {
             $message = new Message(
                 $this->buffer->flush(),
                 $this->return->exchange,
@@ -176,31 +169,28 @@ final class MessageReceiver
                 true,
                 $this->header !== null ? $this->header->toArray() : []
             );
-        }
-        else if($this->deliver)
-        {
-            $message = new Message(
-                $this->buffer->flush(),
-                $this->deliver->exchange,
-                $this->deliver->routingKey,
-                $this->deliver->consumerTag,
-                $this->deliver->deliveryTag,
-                $this->deliver->redelivered,
-                false,
-                $this->header !== null ? $this->header->toArray() : []
-            );
-        }
-        else
-        {
-            throw Exception\ChannelException::frameOrder();
+        } else {
+            if ($this->deliver) {
+                $message = new Message(
+                    $this->buffer->flush(),
+                    $this->deliver->exchange,
+                    $this->deliver->routingKey,
+                    $this->deliver->consumerTag,
+                    $this->deliver->deliveryTag,
+                    $this->deliver->redelivered,
+                    false,
+                    $this->header !== null ? $this->header->toArray() : []
+                );
+            } else {
+                throw Exception\ChannelException::frameOrder();
+            }
         }
 
-        $this->return  = null;
+        $this->return = null;
         $this->deliver = null;
-        $this->header  = null;
+        $this->header = null;
 
-        foreach($this->callbacks as $callback)
-        {
+        foreach ($this->callbacks as $callback) {
             /** @psalm-suppress MixedArgumentTypeCoercion */
             asyncCall($callback, $message);
         }

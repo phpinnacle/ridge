@@ -37,39 +37,35 @@ final class Parser
      */
     public function parse(): ?Protocol\AbstractFrame
     {
-        if($this->buffer->size() < 7)
-        {
+        if ($this->buffer->size() < 7) {
             return null;
         }
 
-        $size   = $this->buffer->readUint32(3);
+        $size = $this->buffer->readUint32(3);
         $length = $size + 8;
 
-        if($this->buffer->size() < $length)
-        {
+        if ($this->buffer->size() < $length) {
             return null;
         }
 
-        $type     = $this->buffer->readUint8();
-        $channel  = $this->buffer->readUint16(1);
-        $payload  = $this->buffer->read($size, 7);
+        $type = $this->buffer->readUint8();
+        $channel = $this->buffer->readUint16(1);
+        $payload = $this->buffer->read($size, 7);
         $frameEnd = $this->buffer->readUint8($length - 1);
 
         $this->buffer->discard($length);
 
-        if($frameEnd !== Constants::FRAME_END)
-        {
+        if ($frameEnd !== Constants::FRAME_END) {
             throw Exception\ProtocolException::invalidFrameEnd($frameEnd);
         }
 
-        switch($type)
-        {
+        switch ($type) {
             case Constants::FRAME_HEADER:
                 $frame = Protocol\ContentHeaderFrame::unpack(new Buffer($payload));
 
                 break;
             case Constants::FRAME_BODY:
-                $frame          = new Protocol\ContentBodyFrame;
+                $frame = new Protocol\ContentBodyFrame;
                 $frame->payload = $payload;
 
                 break;
@@ -86,8 +82,8 @@ final class Parser
         }
 
         /** @var Protocol\AbstractFrame $frame */
-        $frame->type    = $type;
-        $frame->size    = $size;
+        $frame->type = $type;
+        $frame->size = $size;
         $frame->channel = $channel;
 
         return $frame;
@@ -101,11 +97,10 @@ final class Parser
      */
     private function consumeMethodFrame(Buffer $buffer): Protocol\MethodFrame
     {
-        $classId  = $buffer->consumeUint16();
+        $classId = $buffer->consumeUint16();
         $methodId = $buffer->consumeUint16();
 
-        return match ($classId)
-        {
+        return match ($classId) {
             Constants::CLASS_BASIC => $this->consumeBasicFrame($methodId, $buffer),
             Constants::CLASS_CONNECTION => $this->consumeConnectionFrame($methodId, $buffer),
             Constants::CLASS_CHANNEL => $this->consumeChannelFrame($methodId, $buffer),
@@ -125,8 +120,7 @@ final class Parser
      */
     private function consumeBasicFrame(int $methodId, Buffer $buffer): Protocol\MethodFrame
     {
-        return match ($methodId)
-        {
+        return match ($methodId) {
             Constants::METHOD_BASIC_DELIVER => Protocol\BasicDeliverFrame::unpack($buffer),
             Constants::METHOD_BASIC_GET => Protocol\BasicGetFrame::unpack($buffer),
             Constants::METHOD_BASIC_GET_OK => Protocol\BasicGetOkFrame::unpack($buffer),
@@ -157,8 +151,7 @@ final class Parser
      */
     private function consumeConnectionFrame(int $methodId, Buffer $buffer): Protocol\MethodFrame
     {
-        return match ($methodId)
-        {
+        return match ($methodId) {
             Constants::METHOD_CONNECTION_START => Protocol\ConnectionStartFrame::unpack($buffer),
             Constants::METHOD_CONNECTION_START_OK => Protocol\ConnectionStartOkFrame::unpack($buffer),
             Constants::METHOD_CONNECTION_SECURE => Protocol\ConnectionSecureFrame::unpack($buffer),
@@ -183,8 +176,7 @@ final class Parser
      */
     private function consumeChannelFrame(int $methodId, Buffer $buffer): Protocol\MethodFrame
     {
-        return match ($methodId)
-        {
+        return match ($methodId) {
             Constants::METHOD_CHANNEL_OPEN => Protocol\ChannelOpenFrame::unpack($buffer),
             Constants::METHOD_CHANNEL_OPEN_OK => Protocol\ChannelOpenOkFrame::unpack($buffer),
             Constants::METHOD_CHANNEL_FLOW => Protocol\ChannelFlowFrame::unpack($buffer),
@@ -203,8 +195,7 @@ final class Parser
      */
     private function consumeExchangeFrame(int $methodId, Buffer $buffer): Protocol\MethodFrame
     {
-        return match ($methodId)
-        {
+        return match ($methodId) {
             Constants::METHOD_EXCHANGE_DECLARE => Protocol\ExchangeDeclareFrame::unpack($buffer),
             Constants::METHOD_EXCHANGE_DECLARE_OK => new Protocol\ExchangeDeclareOkFrame,
             Constants::METHOD_EXCHANGE_DELETE => Protocol\ExchangeDeleteFrame::unpack($buffer),
@@ -225,8 +216,7 @@ final class Parser
      */
     private function consumeQueueFrame(int $methodId, Buffer $buffer): Protocol\MethodFrame
     {
-        return match ($methodId)
-        {
+        return match ($methodId) {
             Constants::METHOD_QUEUE_DECLARE => Protocol\QueueDeclareFrame::unpack($buffer),
             Constants::METHOD_QUEUE_DECLARE_OK => Protocol\QueueDeclareOkFrame::unpack($buffer),
             Constants::METHOD_QUEUE_BIND => Protocol\QueueBindFrame::unpack($buffer),
@@ -246,8 +236,7 @@ final class Parser
      */
     private function consumeTxFrame(int $methodId): Protocol\MethodFrame
     {
-        return match ($methodId)
-        {
+        return match ($methodId) {
             Constants::METHOD_TX_SELECT => new Protocol\TxSelectFrame,
             Constants::METHOD_TX_SELECT_OK => new Protocol\TxSelectOkFrame,
             Constants::METHOD_TX_COMMIT => new Protocol\TxCommitFrame,
@@ -264,8 +253,7 @@ final class Parser
      */
     private function consumeConfirmFrame(int $methodId, Buffer $buffer): Protocol\MethodFrame
     {
-        return match ($methodId)
-        {
+        return match ($methodId) {
             Constants::METHOD_CONFIRM_SELECT => Protocol\ConfirmSelectFrame::unpack($buffer),
             Constants::METHOD_CONFIRM_SELECT_OK => new Protocol\ConfirmSelectOkFrame,
             default => throw new Exception\MethodInvalid(Constants::CLASS_CONFIRM, $methodId),

@@ -15,44 +15,60 @@ namespace PHPinnacle\Ridge;
 final class Message
 {
     /**
+     * @psalm-readonly
+     *
      * @var string
      */
-    private $content;
+    public $content;
 
     /**
+     * @psalm-readonly
+     *
      * @var string
      */
-    private $exchange;
+    public $exchange;
 
     /**
+     * @psalm-readonly
+     *
      * @var string
      */
-    private $routingKey;
+    public $routingKey;
 
     /**
+     * @psalm-readonly
+     *
      * @var string|null
      */
-    private $consumerTag;
+    public $consumerTag;
 
     /**
+     * @psalm-readonly
+     *
      * @var int|null
      */
-    private $deliveryTag;
+    public $deliveryTag;
 
     /**
+     * @psalm-readonly
+     *
      * @var bool
      */
-    private $redelivered;
+    public $redelivered;
 
     /**
+     * @psalm-readonly
+     *
      * @var bool
      */
-    private $returned;
+    public $returned;
 
     /**
+     * @psalm-readonly
+     *
      * @var array
      */
-    private $headers;
+    public $headers;
 
     public function __construct(
         string $content,
@@ -64,54 +80,14 @@ final class Message
         bool $returned = false,
         array $headers = []
     ) {
-        $this->content     = $content;
-        $this->exchange    = $exchange;
-        $this->routingKey  = $routingKey;
+        $this->content = $content;
+        $this->exchange = $exchange;
+        $this->routingKey = $routingKey;
         $this->consumerTag = $consumerTag;
         $this->deliveryTag = $deliveryTag;
         $this->redelivered = $redelivered;
-        $this->returned    = $returned;
-        $this->headers     = $headers;
-    }
-
-    public function content(): string
-    {
-        return $this->content;
-    }
-
-    public function exchange(): string
-    {
-        return $this->exchange;
-    }
-
-    public function routingKey(): string
-    {
-        return $this->routingKey;
-    }
-
-    public function consumerTag(): ?string
-    {
-        return $this->consumerTag;
-    }
-
-    public function deliveryTag(): ?int
-    {
-        return $this->deliveryTag;
-    }
-
-    public function redelivered(): bool
-    {
-        return $this->redelivered;
-    }
-
-    public function returned(): bool
-    {
-        return $this->returned;
-    }
-
-    public function headers(): array
-    {
-        return $this->headers;
+        $this->returned = $returned;
+        $this->headers = $headers;
     }
 
     public function header(string $name, mixed $default = null): mixed

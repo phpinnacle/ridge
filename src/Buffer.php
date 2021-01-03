@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace PHPinnacle\Ridge;
 
@@ -55,12 +55,11 @@ final class Buffer extends ByteBuffer
         $value = 0;
 
         /**
-         * @var int  $n
+         * @var int $n
          * @var bool $bit
          */
-        foreach($bits as $n => $bit)
-        {
-            $bit   = $bit ? 1 : 0;
+        foreach ($bits as $n => $bit) {
+            $bit = $bit ? 1 : 0;
             $value |= $bit << $n;
         }
 
@@ -74,11 +73,10 @@ final class Buffer extends ByteBuffer
      */
     public function consumeBits(int $n): array
     {
-        $bits  = [];
+        $bits = [];
         $value = $this->consumeUint8();
 
-        for($i = 0; $i < $n; ++$i)
-        {
+        for ($i = 0; $i < $n; ++$i) {
             $bits[] = ($value & (1 << $i)) > 0;
         }
 
@@ -107,11 +105,10 @@ final class Buffer extends ByteBuffer
 
         /**
          * @var string|ByteBuffer $k
-         * @var mixed             $v
+         * @var mixed $v
          */
-        foreach($table as $k => $v)
-        {
-            $k = (string) $k;
+        foreach ($table as $k => $v) {
+            $k = (string)$k;
 
             $buffer->appendUint8(\strlen($k));
             $buffer->append($k);
@@ -131,10 +128,9 @@ final class Buffer extends ByteBuffer
     public function consumeTable(): array
     {
         $buffer = $this->shift($this->consumeUint32());
-        $data   = [];
+        $data = [];
 
-        while(!$buffer->empty())
-        {
+        while (!$buffer->empty()) {
             $data[$buffer->consume($buffer->consumeUint8())] = $buffer->consumeValue();
         }
 
@@ -149,8 +145,7 @@ final class Buffer extends ByteBuffer
         $buffer = new self();
 
         /** @var mixed $v */
-        foreach($value as $v)
-        {
+        foreach ($value as $v) {
             $buffer->appendValue($v);
         }
 
@@ -167,10 +162,9 @@ final class Buffer extends ByteBuffer
     public function consumeArray(): array
     {
         $buffer = $this->shift($this->consumeUint32());
-        $data   = [];
+        $data = [];
 
-        while(!$buffer->empty())
-        {
+        while (!$buffer->empty()) {
             $data[] = $buffer->consumeValue();
         }
 
@@ -196,8 +190,7 @@ final class Buffer extends ByteBuffer
     {
         $fieldType = $this->consumeUint8();
 
-        return match ($fieldType)
-        {
+        return match ($fieldType) {
             Constants::FIELD_BOOLEAN => $this->consumeUint8() > 0,
             Constants::FIELD_SHORT_SHORT_INT => $this->consumeInt8(),
             Constants::FIELD_SHORT_SHORT_UINT => $this->consumeUint8(),
@@ -225,47 +218,39 @@ final class Buffer extends ByteBuffer
      */
     private function appendValue(mixed $value): void
     {
-        if(\is_string($value))
-        {
+        if (\is_string($value)) {
             $this->appendUint8(Constants::FIELD_LONG_STRING);
             $this->appendText($value);
 
             return;
         }
 
-        if(\is_int($value))
-        {
+        if (\is_int($value)) {
             $this->appendUint8(Constants::FIELD_LONG_INT);
             $this->appendInt32($value);
 
             return;
         }
 
-        if(\is_bool($value))
-        {
+        if (\is_bool($value)) {
             $this->appendUint8(Constants::FIELD_BOOLEAN);
-            $this->appendUint8((int) $value);
+            $this->appendUint8((int)$value);
 
             return;
         }
 
-        if(\is_float($value))
-        {
+        if (\is_float($value)) {
             $this->appendUint8(Constants::FIELD_DOUBLE);
             $this->appendDouble($value);
 
             return;
         }
 
-        if(\is_array($value))
-        {
-            if(\array_keys($value) === \range(0, \count($value) - 1))
-            {
+        if (\is_array($value)) {
+            if (\array_keys($value) === \range(0, \count($value) - 1)) {
                 $this->appendUint8(Constants::FIELD_ARRAY);
                 $this->appendArray($value);
-            }
-            else
-            {
+            } else {
                 $this->appendUint8(Constants::FIELD_TABLE);
                 $this->appendTable($value);
             }
@@ -273,15 +258,13 @@ final class Buffer extends ByteBuffer
             return;
         }
 
-        if(\is_null($value))
-        {
+        if (\is_null($value)) {
             $this->appendUint8(Constants::FIELD_NULL);
 
             return;
         }
 
-        if($value instanceof \DateTimeInterface)
-        {
+        if ($value instanceof \DateTimeInterface) {
             $this->appendUint8(Constants::FIELD_TIMESTAMP);
             $this->appendTimestamp($value);
 

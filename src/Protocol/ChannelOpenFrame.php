@@ -19,7 +19,7 @@ class ChannelOpenFrame extends MethodFrame
      * @var string
      */
     public $outOfBand = '';
-    
+
     public function __construct()
     {
         parent::__construct(Constants::CLASS_CHANNEL, Constants::METHOD_CHANNEL_OPEN);
@@ -31,9 +31,9 @@ class ChannelOpenFrame extends MethodFrame
     public static function unpack(Buffer $buffer): self
     {
         $self = new self;
-    
+
         $self->outOfBand = $buffer->consumeString();
-        
+
         return $self;
     }
 
@@ -41,7 +41,7 @@ class ChannelOpenFrame extends MethodFrame
     {
         $buffer = parent::pack();
         $buffer->appendString($this->outOfBand);
-        
+
         return $buffer;
     }
 }

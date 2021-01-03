@@ -67,12 +67,12 @@ class QueueDeclareFrame extends MethodFrame
     {
         $self = new self;
         $self->reserved1 = $buffer->consumeInt16();
-        $self->queue     = $buffer->consumeString();
-    
+        $self->queue = $buffer->consumeString();
+
         [$self->passive, $self->durable, $self->exclusive, $self->autoDelete, $self->nowait] = $buffer->consumeBits(5);
-    
+
         $self->arguments = $buffer->consumeTable();
-        
+
         return $self;
     }
 
@@ -83,7 +83,7 @@ class QueueDeclareFrame extends MethodFrame
         $buffer->appendString($this->queue);
         $buffer->appendBits([$this->passive, $this->durable, $this->exclusive, $this->autoDelete, $this->nowait]);
         $buffer->appendTable($this->arguments);
-        
+
         return $buffer;
     }
 }

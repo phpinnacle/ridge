@@ -29,22 +29,22 @@ class BasicQosFrame extends MethodFrame
      * @var bool
      */
     public $global = false;
-    
+
     public function __construct()
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_QOS);
     }
 
     /**
-      * @throws \PHPinnacle\Buffer\BufferOverflow
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
         $self = new self;
-        $self->prefetchSize  = $buffer->consumeInt32();
+        $self->prefetchSize = $buffer->consumeInt32();
         $self->prefetchCount = $buffer->consumeInt16();
-        [$self->global]      = $buffer->consumeBits(1);
-        
+        [$self->global] = $buffer->consumeBits(1);
+
         return $self;
     }
 
@@ -54,7 +54,7 @@ class BasicQosFrame extends MethodFrame
         $buffer->appendInt32($this->prefetchSize);
         $buffer->appendInt16($this->prefetchCount);
         $buffer->appendBits([$this->global]);
-        
+
         return $buffer;
     }
 }

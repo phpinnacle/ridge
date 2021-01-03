@@ -19,7 +19,7 @@ class ChannelOpenOkFrame extends MethodFrame
      * @var string
      */
     public $channelId = '';
-    
+
     public function __construct()
     {
         parent::__construct(Constants::CLASS_CHANNEL, Constants::METHOD_CHANNEL_OPEN_OK);
@@ -32,7 +32,7 @@ class ChannelOpenOkFrame extends MethodFrame
     {
         $self = new self;
         $self->channelId = $buffer->consumeText();
-        
+
         return $self;
     }
 
@@ -40,7 +40,7 @@ class ChannelOpenOkFrame extends MethodFrame
     {
         $buffer = parent::pack();
         $buffer->appendText($this->channelId);
-        
+
         return $buffer;
     }
 }

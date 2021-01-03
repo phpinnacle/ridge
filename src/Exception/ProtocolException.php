@@ -8,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace PHPinnacle\Ridge\Exception;
 
@@ -55,5 +55,10 @@ class ProtocolException extends RidgeException
         $class = (\is_object($value) ? ' (class `' . \get_class($value) . '`)' : '');
 
         return new self(\sprintf('Unhandled value type `%s`%s.', \gettype($value), $class));
+    }
+
+    public static function unsupportedDeliveryTag(): self
+    {
+        return new self('Delivery tag can\'t be null');
     }
 }
