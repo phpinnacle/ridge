@@ -17,67 +17,48 @@ use PHPinnacle\Ridge\Protocol\AbstractFrame;
 
 class ProtocolException extends RidgeException
 {
-    /**
-     * @param int $frameEnd
-     *
-     * @return self
-     */
     public static function invalidFrameEnd(int $frameEnd): self
     {
-        $message = \sprintf("Frame end byte invalid - expected 0x%02x, got 0x%02x.", Constants::FRAME_END, $frameEnd);
-
-        return new self($message);
+        return new self(
+            \sprintf(
+                'Frame end byte invalid - expected 0x%02x, got 0x%02x.',
+                Constants::FRAME_END,
+                $frameEnd
+            )
+        );
     }
 
-    /**
-     * @param int $type
-     *
-     * @return self
-     */
     public static function unknownFrameType(int $type): self
     {
-        return new self("Unhandled frame type '{$type}'.");
+        return new self(\sprintf('Unhandled frame type `%d`.', $type));
     }
 
-    /**
-     * @param AbstractFrame $frame
-     *
-     * @return self
-     */
     public static function unknownFrameClass(AbstractFrame $frame): self
     {
-        return new self("Unhandled frame '" . get_class($frame) . "'.");
+        return new self(\sprintf('Unhandled frame `%s`', \get_class($frame)));
     }
 
-    /**
-     * @return self
-     */
     public static function notEmptyHeartbeat(): self
     {
-        return new self("Heartbeat frame must be empty.");
+        return new self('Heartbeat frame must be empty.');
     }
 
-    /**
-     * @param int $fieldType
-     *
-     * @return self
-     */
     public static function unknownFieldType(int $fieldType): self
     {
-        $cType = \ctype_print(\chr($fieldType)) ? " ('" . \chr($fieldType) . "')" : "";
+        $cType = \ctype_print(\chr($fieldType)) ? ' (`' . \chr($fieldType) . '`)' : '';
 
-        return new self(\sprintf("Unhandled field type 0x%02x%s.", $fieldType, $cType));
+        return new self(\sprintf('Unhandled field type 0x%02x%s.', $fieldType, $cType));
     }
 
-    /**
-     * @param int $fieldType
-     *
-     * @return self
-     */
-    public static function unknownValueType($value): self
+    public static function unknownValueType(mixed $value): self
     {
-        $class = (\is_object($value) ? " (class " . \get_class($value) . ")" : "");
+        $class = (\is_object($value) ? ' (class `' . \get_class($value) . '`)' : '');
 
-        return new self(\sprintf("Unhandled value type '%s'%s.", \gettype($value), $class));
+        return new self(\sprintf('Unhandled value type `%s`%s.', \gettype($value), $class));
+    }
+
+    public static function unsupportedDeliveryTag(): self
+    {
+        return new self('Delivery tag can\'t be null');
     }
 }

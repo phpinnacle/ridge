@@ -12,105 +12,90 @@ declare(strict_types=1);
 
 namespace PHPinnacle\Ridge;
 
+use PHPinnacle\Ridge\Exception\ConfigurationException;
+
 final class Config
 {
-    private const
-        DEFAULT_HOST  = 'localhost',
-        DEFAULT_PORT  = 5672,
-        DEFAULT_VHOST = '/',
-        DEFAULT_USER  = 'guest',
-        DEFAULT_PASS  = 'guest'
-    ;
-
-    private const OPTIONS = [
-        'timeout'      => 1000,
-        'heartbeat'    => 1000,
-        'qos_count'    => 0,
-        'qos_size'     => 0,
-        'qos_global'   => false,
-        'tcp_nodelay'  => false,
-        'tcp_attempts' => 2,
-        'max_frame'    => 0xFFFF,
-        'max_channel'  => 0xFFFF,
-    ];
+    private const DEFAULT_HOST = 'localhost';
+    private const DEFAULT_PORT = 5672;
+    private const DEFAULT_VHOST = '/';
+    private const DEFAULT_USER = 'guest';
+    private const DEFAULT_PASS = 'guest';
 
     /**
      * @var string
      */
-    private $host;
+    public $host;
 
     /**
      * @var int
      */
-    private $port;
+    public $port;
 
     /**
      * @var string
      */
-    private $user;
+    public $user;
 
     /**
      * @var string
      */
-    private $pass;
+    public $pass;
 
     /**
      * @var string
      */
-    private $vhost;
+    public $vhost;
+
+    /**
+     * Connection timeout (in milliseconds)
+     *
+     * @var int
+     */
+    public $timeout = 1000;
+
+    /**
+     * Heartbeat interval (in milliseconds)
+     *
+     * @var int
+     */
+    public $heartbeat = 60000;
 
     /**
      * @var int
      */
-    private $timeout = 1;
+    public $qosSize = 0;
 
     /**
      * @var int
      */
-    private $heartbeat = 60;
-
-    /**
-     * @var int
-     */
-    private $qosSize = 0;
-
-    /**
-     * @var int
-     */
-    private $qosCount = 0;
+    public $qosCount = 0;
 
     /**
      * @var bool
      */
-    private $qosGlobal = false;
+    public $qosGlobal = false;
 
     /**
      * @var bool
      */
-    private $tcpNoDelay = false;
+    public $tcpNoDelay = false;
 
     /**
      * @var int
      */
-    private $tcpAttempts = 2;
+    public $tcpAttempts = 2;
 
     /**
      * @var int
      */
-    private $maxChannel = 0xFFFF;
+    public $maxChannel = 0xFFFF;
 
     /**
      * @var int
      */
-    private $maxFrame = 0xFFFF;
+    public $maxFrame = 0xFFFF;
 
-    /**
-     * @param string $host
-     * @param int    $port
-     * @param string $user
-     * @param string $pass
-     * @param string $vhost
-     */
     public function __construct(
         string $host = self::DEFAULT_HOST,
         int $port = self::DEFAULT_PORT,
@@ -118,28 +103,37 @@ final class Config
         string $pass = self::DEFAULT_PASS,
         string $vhost = null
     ) {
-        $this->host  = $host;
-        $this->port  = $port;
-        $this->user  = $user;
-        $this->pass  = $pass;
+        $this->host = $host;
+        $this->port = $port;
+        $this->user = $user;
+        $this->pass = $pass;
         $this->vhost = $vhost ?: self::DEFAULT_VHOST;
     }
 
     /**
-     * @param string $dsn
-     *
-     * @return self
+     * @throws \PHPinnacle\Ridge\Exception\ConfigurationException
      */
     public static function parse(string $dsn): self
     {
+        if ($dsn === '') {
+            throw ConfigurationException::emptyDSN();
+        }
+
         $parts = \parse_url($dsn);
 
-        \parse_str($parts['query'] ?? '', $query);
+        if ($parts === false) {
+            throw ConfigurationException::incorrectDSN($dsn);
+        }
 
-        $options = \array_replace(self::OPTIONS, $query);
+        \parse_str($parts['query'] ?? '', $options);
 
-        if (!empty($parts['path'])) {
-            $parts['path'] = \substr($parts['path'], 1);
+        if (isset($parts['path']) && $parts['path'] !== '') {
+            /** @var string|false $vhost */
+            $vhost = \substr($parts['path'], 1);
+
+            if ($vhost !== false) {
+                $parts['path'] = $vhost;
+            }
         }
 
         $self = new self(
@@ -147,160 +141,50 @@ final class Config
             $parts['port'] ?? self::DEFAULT_PORT,
             $parts['user'] ?? self::DEFAULT_USER,
             $parts['pass'] ?? self::DEFAULT_PASS,
-            $parts['path'] ?? self::DEFAULT_VHOST
+            $parts['path'] ?? self::DEFAULT_VHOST,
         );
 
-        $self->timeout   = \filter_var($options['timeout'], FILTER_VALIDATE_INT);
-        $self->heartbeat = \filter_var($options['heartbeat'], FILTER_VALIDATE_INT);
+        if (isset($options['timeout'])) {
+            $self->timeout = (int)$options['timeout'];
+        }
 
-        $self->maxFrame   = \filter_var($options['max_frame'], FILTER_VALIDATE_INT);
-        $self->maxChannel = \filter_var($options['max_channel'], FILTER_VALIDATE_INT);
+        if (isset($options['heartbeat'])) {
+            $self->heartbeat = (int)$options['heartbeat'];
+        }
 
-        $self->qosSize   = \filter_var($options['qos_size'], FILTER_VALIDATE_INT);
-        $self->qosCount  = \filter_var($options['qos_count'], FILTER_VALIDATE_INT);
-        $self->qosGlobal = \filter_var($options['qos_global'], FILTER_VALIDATE_BOOLEAN);
+        if (isset($options['max_frame'])) {
+            $self->maxFrame = (int)$options['max_frame'];
+        }
 
-        $self->tcpNoDelay  = \filter_var($options['tcp_nodelay'], FILTER_VALIDATE_BOOLEAN);
-        $self->tcpAttempts = \filter_var($options['tcp_attempts'], FILTER_VALIDATE_INT);
+        if (isset($options['max_channel'])) {
+            $self->maxChannel = (int)$options['max_channel'];
+        }
+
+        if (isset($options['qos_size'])) {
+            $self->qosSize = (int)$options['qos_size'];
+        }
+
+        if (isset($options['qos_count'])) {
+            $self->qosCount = (int)$options['qos_count'];
+        }
+
+        if (isset($options['qos_global'])) {
+            $self->qosGlobal = (bool)$options['qos_global'];
+        }
+
+        if (isset($options['tcp_nodelay'])) {
+            $self->tcpNoDelay = (bool)$options['tcp_nodelay'];
+        }
+
+        if (isset($options['tcp_attempts'])) {
+            $self->tcpAttempts = (int)$options['tcp_attempts'];
+        }
 
         return $self;
     }
 
-    /**
-     * @return string
-     */
     public function uri(): string
     {
         return \sprintf('tcp://%s:%d', $this->host, $this->port);
-    }
-
-    /**
-     * @return string
-     */
-    public function host(): string
-    {
-        return $this->host;
-    }
-
-    /**
-     * @return int
-     */
-    public function port(): int
-    {
-        return $this->port;
-    }
-
-    /**
-     * @return string
-     */
-    public function vhost(): string
-    {
-        return $this->vhost;
-    }
-
-    /**
-     * @return string
-     */
-    public function user(): string
-    {
-        return $this->user;
-    }
-
-    /**
-     * @return string
-     */
-    public function password(): string
-    {
-        return $this->pass;
-    }
-
-    /**
-     * @param int|null $value
-     *
-     * @return int
-     */
-    public function timeout(int $value = null): int
-    {
-        return \is_null($value) ? $this->timeout : $this->timeout = $value;
-    }
-
-    /**
-     * @param int|null $value
-     *
-     * @return int
-     */
-    public function heartbeat(int $value = null): int
-    {
-        return \is_null($value) ? $this->heartbeat : $this->heartbeat = $value;
-    }
-
-    /**
-     * @param int|null $value
-     *
-     * @return int
-     */
-    public function qosSize(int $value = null): int
-    {
-        return \is_null($value) ? $this->qosSize : $this->qosSize = $value;
-    }
-
-    /**
-     * @param int|null $value
-     *
-     * @return int
-     */
-    public function qosCount(int $value = null): int
-    {
-        return \is_null($value) ? $this->qosCount : $this->qosCount = $value;
-    }
-
-    /**
-     * @param bool|null $value
-     *
-     * @return bool
-     */
-    public function qosGlobal(bool $value = null): bool
-    {
-        return \is_null($value) ? $this->qosGlobal : $this->qosGlobal = $value;
-    }
-
-    /**
-     * @param bool|null $value
-     *
-     * @return bool
-     */
-    public function tcpNoDelay(bool $value = null): bool
-    {
-        return \is_null($value) ? $this->tcpNoDelay : $this->tcpNoDelay = $value;
-    }
-
-    /**
-     * @param int|null $value
-     *
-     * @return int
-     */
-    public function tcpAttempts(int $value = null): int
-    {
-        return \is_null($value) ? $this->tcpAttempts : $this->tcpAttempts = $value;
-    }
-
-    /**
-     * @param int|null $value
-     *
-     * @return int
-     */
-    public function maxChannel(int $value = null): int
-    {
-        return \is_null($value) ? $this->maxChannel : $this->maxChannel = $value;
-    }
-
-    /**
-     * @param int|null $value
-     *
-     * @return int
-     */
-    public function maxFrame(int $value = null): int
-    {
-        return \is_null($value) ? $this->maxFrame : $this->maxFrame = $value;
     }
 }

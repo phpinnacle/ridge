@@ -58,24 +58,16 @@ More examples can be found in [`examples`](examples) directory.
 ## Testing
 
 ```bash
-$ composer test
-```
-
-## Benchmarks
-
-We run benchmarks as follow:
-
-```bash
-$ RIDGE_BENCHMARK_DSN=amqp://user:pass@localhost:5672 composer bench
+$ composer tests
 ```
 
 ## Change log
 
-Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
+Please see [CHANGELOG](.github/CHANGELOG.md) for more information on what has changed recently.
 
 ## Contributing
 
-Please see [CONTRIBUTING](CONTRIBUTING.md) and [CONDUCT](CONDUCT.md) for details.
+Please see [CONTRIBUTING](.github/CONTRIBUTING.md) and [CONDUCT](.github/CONDUCT.md) for details.
 
 ## Security
 

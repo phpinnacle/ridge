@@ -15,36 +15,30 @@ namespace PHPinnacle\Ridge\Protocol;
 abstract class AbstractFrame
 {
     /**
-     * @var int
+     * @var int|null
      */
     public $type;
 
     /**
-     * @var int
+     * @var int|null
      */
     public $channel;
 
     /**
-     * @var int
+     * @var int|null
      */
     public $size;
 
     /**
-     * @var string
+     * @var string|null
      */
     public $payload;
 
-    /**
-     * @param int    $type
-     * @param int    $channel
-     * @param int    $size
-     * @param string $payload
-     */
-    public function __construct(int $type = null, int $channel = null, int $size = null, string $payload = null)
+    public function __construct(?int $type = null, ?int $channel = null, ?int $size = null, ?string $payload = null)
     {
-        $this->type    = $type;
+        $this->type = $type;
         $this->channel = $channel;
-        $this->size    = $size;
+        $this->size = $size;
         $this->payload = $payload;
     }
 }

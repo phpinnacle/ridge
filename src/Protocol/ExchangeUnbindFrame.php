@@ -49,28 +49,23 @@ class ExchangeUnbindFrame extends MethodFrame
     {
         parent::__construct(Constants::CLASS_EXCHANGE, Constants::METHOD_EXCHANGE_UNBIND);
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
         $self = new self;
-        $self->reserved1   = $buffer->consumeInt16();
+        $self->reserved1 = $buffer->consumeInt16();
         $self->destination = $buffer->consumeString();
-        $self->source      = $buffer->consumeString();
-        $self->routingKey  = $buffer->consumeString();
-        [$self->nowait]    = $buffer->consumeBits(1);
-        $self->arguments   = $buffer->consumeTable();
-        
+        $self->source = $buffer->consumeString();
+        $self->routingKey = $buffer->consumeString();
+        [$self->nowait] = $buffer->consumeBits(1);
+        $self->arguments = $buffer->consumeTable();
+
         return $self;
     }
-    
-    /**
-     * @return Buffer
-     */
+
     public function pack(): Buffer
     {
         $buffer = parent::pack();
@@ -80,7 +75,7 @@ class ExchangeUnbindFrame extends MethodFrame
         $buffer->appendString($this->routingKey);
         $buffer->appendBits([$this->nowait]);
         $buffer->appendTable($this->arguments);
-        
+
         return $buffer;
     }
 }

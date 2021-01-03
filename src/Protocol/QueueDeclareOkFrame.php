@@ -29,37 +29,32 @@ class QueueDeclareOkFrame extends MethodFrame
      * @var int
      */
     public $consumerCount;
-    
+
     public function __construct()
     {
         parent::__construct(Constants::CLASS_QUEUE, Constants::METHOD_QUEUE_DECLARE_OK);
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
         $self = new self;
-        $self->queue         = $buffer->consumeString();
-        $self->messageCount  = $buffer->consumeInt32();
+        $self->queue = $buffer->consumeString();
+        $self->messageCount = $buffer->consumeInt32();
         $self->consumerCount = $buffer->consumeInt32();
 
         return $self;
     }
-    
-    /**
-     * @return Buffer
-     */
+
     public function pack(): Buffer
     {
         $buffer = parent::pack();
         $buffer->appendString($this->queue);
         $buffer->appendInt32($this->messageCount);
         $buffer->appendInt32($this->consumerCount);
-        
+
         return $buffer;
     }
 }

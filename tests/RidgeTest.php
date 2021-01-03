@@ -32,12 +32,12 @@ abstract class RidgeTest extends TestCase
      */
     protected static function client(): Client
     {
-        if (!$dsn = \getenv('RIDGE_TEST_DSN')) {
+        if(!$dsn = \getenv('RIDGE_TEST_DSN'))
+        {
             self::markTestSkipped('No test dsn! Please set RIDGE_TEST_DSN environment variable.');
         }
 
         $config = Config::parse($dsn);
-        $config->heartbeat(0);
 
         return new Client($config);
     }

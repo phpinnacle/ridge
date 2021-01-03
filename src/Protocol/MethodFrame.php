@@ -16,37 +16,29 @@ use PHPinnacle\Ridge\Constants;
 class MethodFrame extends AbstractFrame
 {
     /**
-     * @var int
+     * @var int|null
      */
     public $classId;
 
     /**
-     * @var int
+     * @var int|null
      */
     public $methodId;
 
-    /**
-     * @param int $classId
-     * @param int $methodId
-     */
-    public function __construct(int $classId = null, int $methodId = null)
+    public function __construct(?int $classId = null, ?int $methodId = null)
     {
         parent::__construct(Constants::FRAME_METHOD);
 
-        $this->classId  = $classId;
+        $this->classId = $classId;
         $this->methodId = $methodId;
     }
 
-    /**
-     * @return Buffer
-     */
     public function pack(): Buffer
     {
         $buffer = new Buffer;
         $buffer
-            ->appendUint16($this->classId)
-            ->appendUint16($this->methodId)
-        ;
+            ->appendUint16((int)$this->classId)
+            ->appendUint16((int)$this->methodId);
 
         return $buffer;
     }

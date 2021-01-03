@@ -59,28 +59,23 @@ class QueueDeclareFrame extends MethodFrame
     {
         parent::__construct(Constants::CLASS_QUEUE, Constants::METHOD_QUEUE_DECLARE);
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
         $self = new self;
         $self->reserved1 = $buffer->consumeInt16();
-        $self->queue     = $buffer->consumeString();
-    
+        $self->queue = $buffer->consumeString();
+
         [$self->passive, $self->durable, $self->exclusive, $self->autoDelete, $self->nowait] = $buffer->consumeBits(5);
-    
+
         $self->arguments = $buffer->consumeTable();
-        
+
         return $self;
     }
-    
-    /**
-     * @return Buffer
-     */
+
     public function pack(): Buffer
     {
         $buffer = parent::pack();
@@ -88,7 +83,7 @@ class QueueDeclareFrame extends MethodFrame
         $buffer->appendString($this->queue);
         $buffer->appendBits([$this->passive, $this->durable, $this->exclusive, $this->autoDelete, $this->nowait]);
         $buffer->appendTable($this->arguments);
-        
+
         return $buffer;
     }
 }

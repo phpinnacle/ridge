@@ -26,28 +26,23 @@ class BasicRejectFrame extends AcknowledgmentFrame
     }
 
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
         $self = new self;
         $self->deliveryTag = $buffer->consumeInt64();
-        [$self->requeue]   = $buffer->consumeBits(1);
-        
+        [$self->requeue] = $buffer->consumeBits(1);
+
         return $self;
     }
 
-    /**
-     * @return Buffer
-     */
     public function pack(): Buffer
     {
         $buffer = parent::pack();
         $buffer->appendInt64($this->deliveryTag);
         $buffer->appendBits([$this->requeue]);
-        
+
         return $buffer;
     }
 }

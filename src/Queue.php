@@ -29,37 +29,23 @@ final class Queue
      */
     private $consumers;
 
-    /**
-     * @param string $name
-     * @param int    $messages
-     * @param int    $consumers
-     */
     public function __construct(string $name, int $messages, int $consumers)
     {
-        $this->name      = $name;
-        $this->messages  = $messages;
+        $this->name = $name;
+        $this->messages = $messages;
         $this->consumers = $consumers;
     }
 
-    /**
-     * @return string
-     */
     public function name(): string
     {
         return $this->name;
     }
 
-    /**
-     * @return int
-     */
     public function messages(): int
     {
         return $this->messages;
     }
 
-    /**
-     * @return int
-     */
     public function consumers(): int
     {
         return $this->consumers;

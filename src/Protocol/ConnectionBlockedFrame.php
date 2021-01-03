@@ -23,31 +23,26 @@ class ConnectionBlockedFrame extends MethodFrame
     public function __construct()
     {
         parent::__construct(Constants::CLASS_CONNECTION, Constants::METHOD_CONNECTION_BLOCKED);
-    
+
         $this->channel = Constants::CONNECTION_CHANNEL;
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
         $self = new self;
         $self->reason = $buffer->consumeString();
-        
+
         return $self;
     }
-    
-    /**
-     * @return Buffer
-     */
+
     public function pack(): Buffer
     {
         $buffer = parent::pack();
         $buffer->appendString($this->reason);
-        
+
         return $buffer;
     }
 }

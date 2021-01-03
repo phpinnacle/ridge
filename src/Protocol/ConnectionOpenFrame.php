@@ -29,39 +29,34 @@ class ConnectionOpenFrame extends MethodFrame
      * @var bool
      */
     public $insist = false;
-    
+
     public function __construct()
     {
         parent::__construct(Constants::CLASS_CONNECTION, Constants::METHOD_CONNECTION_OPEN);
-    
+
         $this->channel = Constants::CONNECTION_CHANNEL;
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
         $self = new self;
-        $self->virtualHost   = $buffer->consumeString();
-        $self->capabilities  = $buffer->consumeString();
-        [$self->insist]      = $buffer->consumeBits(1);
-        
+        $self->virtualHost = $buffer->consumeString();
+        $self->capabilities = $buffer->consumeString();
+        [$self->insist] = $buffer->consumeBits(1);
+
         return $self;
     }
-    
-    /**
-     * @return Buffer
-     */
+
     public function pack(): Buffer
     {
         $buffer = parent::pack();
         $buffer->appendString($this->virtualHost);
         $buffer->appendString($this->capabilities);
         $buffer->appendBits([$this->insist]);
-        
+
         return $buffer;
     }
 }

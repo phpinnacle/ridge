@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<psalm
+        totallyTyped="true"
+        useDocblockTypes="true"
+        useDocblockPropertyTypes="true"
+        allowPhpStormGenerics="true"
+        strictBinaryOperands="true"
+        findUnusedPsalmSuppress="true"
+        ignoreInternalFunctionFalseReturn="false"
+        ignoreInternalFunctionNullReturn="false"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="https://getpsalm.org/schema/config"
+        xsi:schemaLocation="https://getpsalm.org/schema/config"
+>
+    <projectFiles>
+        <directory name="src"/>
+        <ignoreFiles>
+            <directory name="vendor"/>
+        </ignoreFiles>
+    </projectFiles>
+
+    <issueHandlers>
+        <PropertyNotSetInConstructor errorLevel="suppress"/>
+    </issueHandlers>
+</psalm>

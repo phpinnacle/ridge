@@ -14,11 +14,8 @@ namespace PHPinnacle\Ridge\Exception;
 
 final class ClassInvalid extends ProtocolException
 {
-    /**
-     * @param int $classId
-     */
     public function __construct(int $classId)
     {
-        parent::__construct("Unhandled method frame class '{$classId}'.");
+        parent::__construct(\sprintf('Unhandled method frame class `%d`.', $classId));
     }
 }

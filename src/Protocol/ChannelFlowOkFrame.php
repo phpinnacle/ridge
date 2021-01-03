@@ -24,28 +24,23 @@ class ChannelFlowOkFrame extends MethodFrame
     {
         parent::__construct(Constants::CLASS_CHANNEL, Constants::METHOD_CHANNEL_FLOW_OK);
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
         $self = new self;
         [$self->active] = $buffer->consumeBits(1);
-        
+
         return $self;
     }
-    
-    /**
-     * @return Buffer
-     */
+
     public function pack(): Buffer
     {
         $buffer = parent::pack();
         $buffer->appendBits([$this->active]);
-        
+
         return $buffer;
     }
 }

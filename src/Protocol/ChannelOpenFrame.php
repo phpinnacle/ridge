@@ -19,34 +19,29 @@ class ChannelOpenFrame extends MethodFrame
      * @var string
      */
     public $outOfBand = '';
-    
+
     public function __construct()
     {
         parent::__construct(Constants::CLASS_CHANNEL, Constants::METHOD_CHANNEL_OPEN);
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
         $self = new self;
-    
+
         $self->outOfBand = $buffer->consumeString();
-        
+
         return $self;
     }
-    
-    /**
-     * @return Buffer
-     */
+
     public function pack(): Buffer
     {
         $buffer = parent::pack();
         $buffer->appendString($this->outOfBand);
-        
+
         return $buffer;
     }
 }

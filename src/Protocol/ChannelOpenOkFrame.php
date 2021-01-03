@@ -19,33 +19,28 @@ class ChannelOpenOkFrame extends MethodFrame
      * @var string
      */
     public $channelId = '';
-    
+
     public function __construct()
     {
         parent::__construct(Constants::CLASS_CHANNEL, Constants::METHOD_CHANNEL_OPEN_OK);
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
         $self = new self;
         $self->channelId = $buffer->consumeText();
-        
+
         return $self;
     }
-    
-    /**
-     * @return Buffer
-     */
+
     public function pack(): Buffer
     {
         $buffer = parent::pack();
         $buffer->appendText($this->channelId);
-        
+
         return $buffer;
     }
 }

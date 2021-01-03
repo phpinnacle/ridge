@@ -34,33 +34,28 @@ class ConnectionStartOkFrame extends MethodFrame
      * @var string
      */
     public $locale = 'en_US';
-    
+
     public function __construct()
     {
         parent::__construct(Constants::CLASS_CONNECTION, Constants::METHOD_CONNECTION_START_OK);
-    
+
         $this->channel = Constants::CONNECTION_CHANNEL;
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
         $self = new self;
         $self->clientProperties = $buffer->consumeTable();
-        $self->mechanism        = $buffer->consumeString();
-        $self->response         = $buffer->consumeText();
-        $self->locale           = $buffer->consumeString();
-        
+        $self->mechanism = $buffer->consumeString();
+        $self->response = $buffer->consumeText();
+        $self->locale = $buffer->consumeString();
+
         return $self;
     }
 
-    /**
-     * @return Buffer
-     */
     public function pack(): Buffer
     {
         $buffer = parent::pack();
@@ -68,7 +63,7 @@ class ConnectionStartOkFrame extends MethodFrame
         $buffer->appendString($this->mechanism);
         $buffer->appendText($this->response);
         $buffer->appendString($this->locale);
-        
+
         return $buffer;
     }
 }

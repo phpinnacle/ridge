@@ -24,31 +24,26 @@ class BasicNackFrame extends AcknowledgmentFrame
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_NACK);
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
         $self = new self;
         $self->deliveryTag = $buffer->consumeInt64();
-    
+
         [$self->multiple, $self->requeue] = $buffer->consumeBits(2);
-        
+
         return $self;
     }
-    
-    /**
-     * @return Buffer
-     */
+
     public function pack(): Buffer
     {
         $buffer = parent::pack();
         $buffer->appendInt64($this->deliveryTag);
         $buffer->appendBits([$this->multiple, $this->requeue]);
-        
+
         return $buffer;
     }
 }

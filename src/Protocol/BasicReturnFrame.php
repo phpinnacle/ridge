@@ -34,31 +34,26 @@ class BasicReturnFrame extends MethodFrame
      * @var string
      */
     public $routingKey;
-    
+
     public function __construct()
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_RETURN);
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
         $self = new self;
-        $self->replyCode  = $buffer->consumeInt16();
-        $self->replyText  = $buffer->consumeString();
-        $self->exchange   = $buffer->consumeString();
+        $self->replyCode = $buffer->consumeInt16();
+        $self->replyText = $buffer->consumeString();
+        $self->exchange = $buffer->consumeString();
         $self->routingKey = $buffer->consumeString();
-        
+
         return $self;
     }
-    
-    /**
-     * @return Buffer
-     */
+
     public function pack(): Buffer
     {
         $buffer = parent::pack();
@@ -66,7 +61,7 @@ class BasicReturnFrame extends MethodFrame
         $buffer->appendString($this->replyText);
         $buffer->appendString($this->exchange);
         $buffer->appendString($this->routingKey);
-        
+
         return $buffer;
     }
 }

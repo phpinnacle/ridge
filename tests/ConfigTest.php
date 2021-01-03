@@ -18,11 +18,11 @@ class ConfigTest extends RidgeTest
     {
         $config = new Config();
 
-        self::assertSame('localhost', $config->host());
-        self::assertSame(5672, $config->port());
-        self::assertSame('/', $config->vhost());
-        self::assertSame('guest', $config->user());
-        self::assertSame('guest', $config->password());
+        self::assertSame('localhost', $config->host);
+        self::assertSame(5672, $config->port);
+        self::assertSame('/', $config->vhost);
+        self::assertSame('guest', $config->user);
+        self::assertSame('guest', $config->pass);
     }
 
     public function testUri()
@@ -38,20 +38,20 @@ class ConfigTest extends RidgeTest
     {
         $config = Config::parse('amqp://user:pass@localhost:5672/test');
 
-        self::assertSame('localhost', $config->host());
-        self::assertSame(5672, $config->port());
-        self::assertSame('test', $config->vhost());
-        self::assertSame('user', $config->user());
-        self::assertSame('pass', $config->password());
+        self::assertSame('localhost', $config->host);
+        self::assertSame(5672, $config->port);
+        self::assertSame('test', $config->vhost);
+        self::assertSame('user', $config->user);
+        self::assertSame('pass', $config->pass);
     }
 
     public function testVhost()
     {
-        self::assertSame('test', Config::parse('amqp://localhost:5672/test')->vhost());
-        self::assertSame('/', Config::parse('amqp://localhost:5672/')->vhost());
-        self::assertSame('/', Config::parse('amqp://localhost:5672')->vhost());
-        self::assertSame('test/', Config::parse('amqp://localhost:5672/test/')->vhost());
-        self::assertSame('test/test', Config::parse('amqp://localhost:5672/test/test')->vhost());
-        self::assertSame('test/test//', Config::parse('amqp://localhost:5672/test/test//')->vhost());
+        self::assertSame('test', Config::parse('amqp://localhost:5672/test')->vhost);
+        self::assertSame('/', Config::parse('amqp://localhost:5672/')->vhost);
+        self::assertSame('/', Config::parse('amqp://localhost:5672')->vhost);
+        self::assertSame('test/', Config::parse('amqp://localhost:5672/test/')->vhost);
+        self::assertSame('test/test', Config::parse('amqp://localhost:5672/test/test')->vhost);
+        self::assertSame('test/test//', Config::parse('amqp://localhost:5672/test/test//')->vhost);
     }
 }

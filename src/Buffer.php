@@ -16,61 +16,48 @@ use PHPinnacle\Buffer\ByteBuffer;
 
 final class Buffer extends ByteBuffer
 {
-    /**
-     * @param string $value
-     *
-     * @return static
-     */
     public function appendString(string $value): self
     {
         $this
             ->appendUint8(\strlen($value))
-            ->append($value)
-        ;
+            ->append($value);
 
         return $this;
     }
 
     /**
-     * @return string
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public function consumeString(): string
     {
         return $this->consume($this->consumeUint8());
     }
 
-    /**
-     * @param string $value
-     *
-     * @return self
-     */
     public function appendText(string $value): self
     {
         $this
             ->appendUint32(\strlen($value))
-            ->append($value)
-        ;
+            ->append($value);
 
         return $this;
     }
 
     /**
-     * @return string
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public function consumeText(): string
     {
         return $this->consume($this->consumeUint32());
     }
 
-    /**
-     * @param array $bits
-     *
-     * @return self
-     */
     public function appendBits(array $bits): self
     {
         $value = 0;
 
+        /**
+         * @var int $n
+         * @var bool $bit
+         */
         foreach ($bits as $n => $bit) {
             $bit = $bit ? 1 : 0;
             $value |= $bit << $n;
@@ -82,9 +69,7 @@ final class Buffer extends ByteBuffer
     }
 
     /**
-     * @param int $n
-     *
-     * @return bool[]
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public function consumeBits(int $n): array
     {
@@ -98,11 +83,6 @@ final class Buffer extends ByteBuffer
         return $bits;
     }
 
-    /**
-     * @param \DateTimeInterface $value
-     *
-     * @return self
-     */
     public function appendTimestamp(\DateTimeInterface $value): self
     {
         $this->appendUint64($value->getTimestamp());
@@ -110,28 +90,25 @@ final class Buffer extends ByteBuffer
         return $this;
     }
 
-    /**
-     * @noinspection PhpDocMissingThrowsInspection
-     *
-     * @return \DateTimeInterface
-     */
     public function consumeTimestamp(): \DateTimeInterface
     {
         /** @noinspection PhpUnhandledExceptionInspection */
-        return (new \DateTimeImmutable)->setTimestamp($this->consumeUint64());
+        return new \DateTimeImmutable(\sprintf('@%s', $this->consumeUint64()));
     }
 
     /**
-     * @param array $table
-     *
-     * @return self
+     * @throws \PHPinnacle\Ridge\Exception\ProtocolException
      */
     public function appendTable(array $table): self
     {
-        $buffer = new static;
+        $buffer = new self();
 
+        /**
+         * @var string|ByteBuffer $k
+         * @var mixed $v
+         */
         foreach ($table as $k => $v) {
-            $k = (string) $k;
+            $k = (string)$k;
 
             $buffer->appendUint8(\strlen($k));
             $buffer->append($k);
@@ -140,14 +117,13 @@ final class Buffer extends ByteBuffer
 
         $this
             ->appendUint32($buffer->size())
-            ->append($buffer)
-        ;
+            ->append($buffer);
 
         return $this;
     }
 
     /**
-     * @return array
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public function consumeTable(): array
     {
@@ -162,28 +138,26 @@ final class Buffer extends ByteBuffer
     }
 
     /**
-     * @param array $value
-     *
-     * @return self
+     * @throws \PHPinnacle\Ridge\Exception\ProtocolException
      */
     public function appendArray(array $value): self
     {
-        $buffer = new static;
+        $buffer = new self();
 
+        /** @var mixed $v */
         foreach ($value as $v) {
             $buffer->appendValue($v);
         }
 
         $this
             ->appendUint32($buffer->size())
-            ->append($buffer)
-        ;
+            ->append($buffer);
 
         return $this;
     }
 
     /**
-     * @return array
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public function consumeArray(): array
     {
@@ -198,7 +172,7 @@ final class Buffer extends ByteBuffer
     }
 
     /**
-     * @return int
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public function consumeDecimal(): int
     {
@@ -209,73 +183,70 @@ final class Buffer extends ByteBuffer
     }
 
     /**
-     * @return mixed
-     * @throws Exception\ProtocolException
+     * @throws \PHPinnacle\Buffer\BufferOverflow
+     * @throws \PHPinnacle\Ridge\Exception\ProtocolException
      */
-    private function consumeValue()
+    private function consumeValue(): float|\DateTimeInterface|null|array|bool|int|string
     {
         $fieldType = $this->consumeUint8();
 
-        switch ($fieldType) {
-            case Constants::FIELD_BOOLEAN:
-                return $this->consumeUint8() > 0;
-            case Constants::FIELD_SHORT_SHORT_INT:
-                return $this->consumeInt8();
-            case Constants::FIELD_SHORT_SHORT_UINT:
-                return $this->consumeUint8();
-            case Constants::FIELD_SHORT_INT:
-                return $this->consumeInt16();
-            case Constants::FIELD_SHORT_UINT:
-                return $this->consumeUint16();
-            case Constants::FIELD_LONG_INT:
-                return $this->consumeInt32();
-            case Constants::FIELD_LONG_UINT:
-                return $this->consumeUint32();
-            case Constants::FIELD_LONG_LONG_INT:
-                return $this->consumeInt64();
-            case Constants::FIELD_LONG_LONG_UINT:
-                return $this->consumeUint64();
-            case Constants::FIELD_FLOAT:
-                return $this->consumeFloat();
-            case Constants::FIELD_DOUBLE:
-                return $this->consumeDouble();
-            case Constants::FIELD_DECIMAL:
-                return $this->consumeDecimal();
-            case Constants::FIELD_SHORT_STRING:
-                return $this->consume($this->consumeUint8());
-            case Constants::FIELD_LONG_STRING:
-                return $this->consume($this->consumeUint32());
-            case Constants::FIELD_TIMESTAMP:
-                return $this->consumeTimestamp();
-            case Constants::FIELD_ARRAY:
-                return $this->consumeArray();
-            case Constants::FIELD_TABLE:
-                return $this->consumeTable();
-            case Constants::FIELD_NULL:
-                return null;
-            default:
-                throw Exception\ProtocolException::unknownFieldType($fieldType);
-        }
+        return match ($fieldType) {
+            Constants::FIELD_BOOLEAN => $this->consumeUint8() > 0,
+            Constants::FIELD_SHORT_SHORT_INT => $this->consumeInt8(),
+            Constants::FIELD_SHORT_SHORT_UINT => $this->consumeUint8(),
+            Constants::FIELD_SHORT_INT => $this->consumeInt16(),
+            Constants::FIELD_SHORT_UINT => $this->consumeUint16(),
+            Constants::FIELD_LONG_INT => $this->consumeInt32(),
+            Constants::FIELD_LONG_UINT => $this->consumeUint32(),
+            Constants::FIELD_LONG_LONG_INT => $this->consumeInt64(),
+            Constants::FIELD_LONG_LONG_UINT => $this->consumeUint64(),
+            Constants::FIELD_FLOAT => $this->consumeFloat(),
+            Constants::FIELD_DOUBLE => $this->consumeDouble(),
+            Constants::FIELD_DECIMAL => $this->consumeDecimal(),
+            Constants::FIELD_SHORT_STRING => $this->consume($this->consumeUint8()),
+            Constants::FIELD_LONG_STRING => $this->consume($this->consumeUint32()),
+            Constants::FIELD_TIMESTAMP => $this->consumeTimestamp(),
+            Constants::FIELD_ARRAY => $this->consumeArray(),
+            Constants::FIELD_TABLE => $this->consumeTable(),
+            Constants::FIELD_NULL => null,
+            default => throw Exception\ProtocolException::unknownFieldType($fieldType),
+        };
     }
 
     /**
-     * @param mixed  $value
+     * @throws \PHPinnacle\Ridge\Exception\ProtocolException
      */
-    private function appendValue($value)
+    private function appendValue(mixed $value): void
     {
         if (\is_string($value)) {
             $this->appendUint8(Constants::FIELD_LONG_STRING);
             $this->appendText($value);
-        } elseif (\is_int($value)) {
+
+            return;
+        }
+
+        if (\is_int($value)) {
             $this->appendUint8(Constants::FIELD_LONG_INT);
             $this->appendInt32($value);
-        } elseif (\is_bool($value)) {
+
+            return;
+        }
+
+        if (\is_bool($value)) {
             $this->appendUint8(Constants::FIELD_BOOLEAN);
-            $this->appendUint8(\intval($value));
-        } elseif (\is_float($value)) {
+            $this->appendUint8((int)$value);
+
+            return;
+        }
+
+        if (\is_float($value)) {
             $this->appendUint8(Constants::FIELD_DOUBLE);
             $this->appendDouble($value);
-        } elseif (\is_array($value)) {
+
+            return;
+        }
+
+        if (\is_array($value)) {
             if (\array_keys($value) === \range(0, \count($value) - 1)) {
                 $this->appendUint8(Constants::FIELD_ARRAY);
                 $this->appendArray($value);
@@ -283,13 +254,23 @@ final class Buffer extends ByteBuffer
                 $this->appendUint8(Constants::FIELD_TABLE);
                 $this->appendTable($value);
             }
-        } elseif (\is_null($value)) {
+
+            return;
+        }
+
+        if (\is_null($value)) {
             $this->appendUint8(Constants::FIELD_NULL);
-        } elseif ($value instanceof \DateTime) {
+
+            return;
+        }
+
+        if ($value instanceof \DateTimeInterface) {
             $this->appendUint8(Constants::FIELD_TIMESTAMP);
             $this->appendTimestamp($value);
-        } else {
-            throw Exception\ProtocolException::unknownValueType($value);
+
+            return;
         }
+
+        throw Exception\ProtocolException::unknownValueType($value);
     }
 }

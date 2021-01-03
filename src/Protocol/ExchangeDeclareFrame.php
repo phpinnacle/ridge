@@ -64,29 +64,24 @@ class ExchangeDeclareFrame extends MethodFrame
     {
         parent::__construct(Constants::CLASS_EXCHANGE, Constants::METHOD_EXCHANGE_DECLARE);
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
         $self = new self;
-        $self->reserved1    = $buffer->consumeInt16();
-        $self->exchange     = $buffer->consumeString();
+        $self->reserved1 = $buffer->consumeInt16();
+        $self->exchange = $buffer->consumeString();
         $self->exchangeType = $buffer->consumeString();
 
         [$self->passive, $self->durable, $self->autoDelete, $self->internal, $self->nowait] = $buffer->consumeBits(5);
 
         $self->arguments = $buffer->consumeTable();
-        
+
         return $self;
     }
-    
-    /**
-     * @return Buffer
-     */
+
     public function pack(): Buffer
     {
         $buffer = parent::pack();
@@ -95,7 +90,7 @@ class ExchangeDeclareFrame extends MethodFrame
         $buffer->appendString($this->exchangeType);
         $buffer->appendBits([$this->passive, $this->durable, $this->autoDelete, $this->internal, $this->nowait]);
         $buffer->appendTable($this->arguments);
-        
+
         return $buffer;
     }
 }

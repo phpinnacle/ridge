@@ -44,34 +44,28 @@ class QueueBindFrame extends MethodFrame
      * @var array
      */
     public $arguments = [];
-    
+
     public function __construct()
     {
         parent::__construct(Constants::CLASS_QUEUE, Constants::METHOD_QUEUE_BIND);
-        
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
         $self = new self;
-        $self->reserved1  = $buffer->consumeInt16();
-        $self->queue      = $buffer->consumeString();
-        $self->exchange   = $buffer->consumeString();
+        $self->reserved1 = $buffer->consumeInt16();
+        $self->queue = $buffer->consumeString();
+        $self->exchange = $buffer->consumeString();
         $self->routingKey = $buffer->consumeString();
-        [$self->nowait]   = $buffer->consumeBits(1);
-        $self->arguments  = $buffer->consumeTable();
-        
+        [$self->nowait] = $buffer->consumeBits(1);
+        $self->arguments = $buffer->consumeTable();
+
         return $self;
     }
-    
-    /**
-     * @return Buffer
-     */
+
     public function pack(): Buffer
     {
         $buffer = parent::pack();
@@ -81,7 +75,7 @@ class QueueBindFrame extends MethodFrame
         $buffer->appendString($this->routingKey);
         $buffer->appendBits([$this->nowait]);
         $buffer->appendTable($this->arguments);
-        
+
         return $buffer;
     }
 }

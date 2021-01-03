@@ -46,25 +46,20 @@ class QueueUnbindFrame extends MethodFrame
     }
 
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
         $self = new self;
-        $self->reserved1  = $buffer->consumeInt16();
-        $self->queue      = $buffer->consumeString();
-        $self->exchange   = $buffer->consumeString();
+        $self->reserved1 = $buffer->consumeInt16();
+        $self->queue = $buffer->consumeString();
+        $self->exchange = $buffer->consumeString();
         $self->routingKey = $buffer->consumeString();
-        $self->arguments  = $buffer->consumeTable();
-        
+        $self->arguments = $buffer->consumeTable();
+
         return $self;
     }
 
-    /**
-     * @return Buffer
-     */
     public function pack(): Buffer
     {
         $buffer = parent::pack();
@@ -73,7 +68,7 @@ class QueueUnbindFrame extends MethodFrame
         $buffer->appendString($this->exchange);
         $buffer->appendString($this->routingKey);
         $buffer->appendTable($this->arguments);
-        
+
         return $buffer;
     }
 }

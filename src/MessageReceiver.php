@@ -16,11 +16,10 @@ use function Amp\asyncCall;
 
 final class MessageReceiver
 {
-    const
+    public const
         STATE_WAIT = 0,
         STATE_HEAD = 1,
-        STATE_BODY = 2
-    ;
+        STATE_BODY = 2;
 
     /**
      * @var Channel
@@ -53,34 +52,27 @@ final class MessageReceiver
     private $callbacks = [];
 
     /**
-     * @var Protocol\BasicDeliverFrame
+     * @var Protocol\BasicDeliverFrame|null
      */
     private $deliver;
 
     /**
-     * @var Protocol\BasicReturnFrame
+     * @var Protocol\BasicReturnFrame|null
      */
     private $return;
 
     /**
-     * @var Protocol\ContentHeaderFrame
+     * @var Protocol\ContentHeaderFrame|null
      */
     private $header;
 
-    /**
-     * @param Channel    $channel
-     * @param Connection $connection
-     */
     public function __construct(Channel $channel, Connection $connection)
     {
-        $this->channel    = $channel;
+        $this->channel = $channel;
         $this->connection = $connection;
-        $this->buffer     = new Buffer;
+        $this->buffer = new Buffer;
     }
 
-    /**
-     * @return void
-     */
     public function start(): void
     {
         $this->onFrame(Protocol\BasicReturnFrame::class, [$this, 'receiveReturn']);
@@ -89,40 +81,24 @@ final class MessageReceiver
         $this->onFrame(Protocol\ContentBodyFrame::class, [$this, 'receiveBody']);
     }
 
-    /**
-     * @return void
-     */
     public function stop(): void
     {
         $this->callbacks = [];
     }
 
-    /**
-     * @param callable $callback
-     *
-     * @return void
-     */
     public function onMessage(callable $callback): void
     {
         $this->callbacks[] = $callback;
     }
 
     /**
-     * @param string   $frame
-     * @param callable $callback
-     *
-     * @return void
+     * @psalm-param class-string<Protocol\AbstractFrame> $frame
      */
     public function onFrame(string $frame, callable $callback): void
     {
         $this->connection->subscribe($this->channel->id(), $frame, $callback);
     }
 
-    /**
-     * @param Protocol\BasicReturnFrame $frame
-     *
-     * @return void
-     */
     public function receiveReturn(Protocol\BasicReturnFrame $frame): void
     {
         if ($this->state !== self::STATE_WAIT) {
@@ -130,14 +106,9 @@ final class MessageReceiver
         }
 
         $this->return = $frame;
-        $this->state  = self::STATE_HEAD;
+        $this->state = self::STATE_HEAD;
     }
 
-    /**
-     * @param Protocol\BasicDeliverFrame $frame
-     *
-     * @return void
-     */
     public function receiveDeliver(Protocol\BasicDeliverFrame $frame): void
     {
         if ($this->state !== self::STATE_WAIT) {
@@ -145,41 +116,31 @@ final class MessageReceiver
         }
 
         $this->deliver = $frame;
-        $this->state   = self::STATE_HEAD;
+        $this->state = self::STATE_HEAD;
     }
 
-    /**
-     * @param Protocol\ContentHeaderFrame $frame
-     *
-     * @return void
-     */
     public function receiveHeader(Protocol\ContentHeaderFrame $frame): void
     {
         if ($this->state !== self::STATE_HEAD) {
             return;
         }
 
-        $this->state     = self::STATE_BODY;
-        $this->header    = $frame;
+        $this->state = self::STATE_BODY;
+        $this->header = $frame;
         $this->remaining = $frame->bodySize;
 
         $this->runCallbacks();
     }
 
-    /**
-     * @param Protocol\ContentBodyFrame $frame
-     *
-     * @return void
-     */
     public function receiveBody(Protocol\ContentBodyFrame $frame): void
     {
         if ($this->state !== self::STATE_BODY) {
             return;
         }
 
-        $this->buffer->append($frame->payload);
+        $this->buffer->append((string)$frame->payload);
 
-        $this->remaining -= $frame->size;
+        $this->remaining -= (int)$frame->size;
 
         if ($this->remaining < 0) {
             throw Exception\ChannelException::bodyOverflow($this->remaining);
@@ -189,7 +150,7 @@ final class MessageReceiver
     }
 
     /**
-     * @return void
+     * @throws \PHPinnacle\Ridge\Exception\ChannelException
      */
     private function runCallbacks(): void
     {
@@ -206,28 +167,31 @@ final class MessageReceiver
                 null,
                 false,
                 true,
-                $this->header->toArray()
-            );
-        } elseif ($this->deliver) {
-            $message = new Message(
-                $this->buffer->flush(),
-                $this->deliver->exchange,
-                $this->deliver->routingKey,
-                $this->deliver->consumerTag,
-                $this->deliver->deliveryTag,
-                $this->deliver->redelivered,
-                false,
-                $this->header->toArray()
+                $this->header !== null ? $this->header->toArray() : []
             );
         } else {
-            throw Exception\ChannelException::frameOrder();
+            if ($this->deliver) {
+                $message = new Message(
+                    $this->buffer->flush(),
+                    $this->deliver->exchange,
+                    $this->deliver->routingKey,
+                    $this->deliver->consumerTag,
+                    $this->deliver->deliveryTag,
+                    $this->deliver->redelivered,
+                    false,
+                    $this->header !== null ? $this->header->toArray() : []
+                );
+            } else {
+                throw Exception\ChannelException::frameOrder();
+            }
         }
 
-        $this->return  = null;
+        $this->return = null;
         $this->deliver = null;
-        $this->header  = null;
+        $this->header = null;
 
         foreach ($this->callbacks as $callback) {
+            /** @psalm-suppress MixedArgumentTypeCoercion */
             asyncCall($callback, $message);
         }
 

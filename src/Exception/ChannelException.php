@@ -8,73 +8,46 @@
  * file that was distributed with this source code.
  */
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace PHPinnacle\Ridge\Exception;
 
 final class ChannelException extends RidgeException
 {
-    /**
-     * @param int $id
-     *
-     * @return self
-     */
     public static function notReady(int $id): self
     {
-        return new self("Trying to open not ready channel #{$id}.");
+        return new self(\sprintf('Trying to open not ready channel #%d.', $id));
     }
-    
-    /**
-     * @param int $id
-     *
-     * @return self
-     */
+
     public static function alreadyClosed(int $id): self
     {
-        return new self("Trying to close already closed channel #{$id}.");
+        return new self(\sprintf('Trying to close already closed channel #%d.', $id));
     }
 
-    /**
-     * @param string $mode
-     *
-     * @return self
-     */
     public static function notRegularFor(string $mode): self
     {
-        return new self("Channel not in regular mode, cannot change to {$mode} mode.");
+        return new self(\sprintf('Channel not in regular mode, cannot change to %s mode.', $mode));
     }
-    
-    /**
-     * @return self
-     */
+
     public static function notTransactional(): self
     {
-        return new self("Channel not in transactional mode.");
+        return new self('Channel not in transactional mode.');
     }
 
-    /**
-     * @return self
-     */
     public static function getInProgress(): self
     {
-        return new self("Another 'basic.get' already in progress. You should use 'basic.consume' instead of multiple 'basic.get'.");
+        return new self(
+            'Another `basic.get` already in progress. You should use `basic.consume` instead of multiple `basic.get`.'
+        );
     }
 
-    /**
-     * @return self
-     */
     public static function frameOrder(): self
     {
-        return new self("Consume frames order malformed.");
+        return new self('Consume frames order malformed.');
     }
 
-    /**
-     * @param int $remaining
-     *
-     * @return self
-     */
     public static function bodyOverflow(int $remaining): self
     {
-        return new self("Body overflow, received {$remaining} more bytes.");
+        return new self(\sprintf('Body overflow, received %d more bytes.', $remaining));
     }
 }

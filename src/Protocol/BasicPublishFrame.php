@@ -39,32 +39,27 @@ class BasicPublishFrame extends MethodFrame
      * @var bool
      */
     public $immediate = false;
-    
+
     public function __construct()
     {
         parent::__construct(Constants::CLASS_BASIC, Constants::METHOD_BASIC_PUBLISH);
     }
-    
+
     /**
-     * @param Buffer $buffer
-     *
-     * @return self
+     * @throws \PHPinnacle\Buffer\BufferOverflow
      */
     public static function unpack(Buffer $buffer): self
     {
         $self = new self;
-        $self->reserved1  = $buffer->consumeInt16();
-        $self->exchange   = $buffer->consumeString();
+        $self->reserved1 = $buffer->consumeInt16();
+        $self->exchange = $buffer->consumeString();
         $self->routingKey = $buffer->consumeString();
-    
+
         [$self->mandatory, $self->immediate] = $buffer->consumeBits(2);
-        
+
         return $self;
     }
-    
-    /**
-     * @return Buffer
-     */
+
     public function pack(): Buffer
     {
         $buffer = parent::pack();
@@ -72,7 +67,7 @@ class BasicPublishFrame extends MethodFrame
         $buffer->appendString($this->exchange);
         $buffer->appendString($this->routingKey);
         $buffer->appendBits([$this->mandatory, $this->immediate]);
-        
+
         return $buffer;
     }
 }
