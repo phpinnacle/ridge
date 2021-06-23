@@ -310,7 +310,9 @@ final class Client
                 $this->properties->tune($maxChannel, $maxFrame);
 
                 if ($heartbeatInterval > 0) {
-                    $this->connection->heartbeat($heartbeatInterval);
+                    $this->connection->heartbeat($heartbeatInterval, function (){
+                        $this->state = self::STATE_NOT_CONNECTED;
+                    });
                 }
             }
         );
