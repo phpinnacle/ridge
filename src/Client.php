@@ -128,6 +128,7 @@ final class Client
 
                         $this->connection->write($buffer);
                         $this->connection->close();
+                        $this->state = self::STATE_NOT_CONNECTED;
                     }
                 );
 
