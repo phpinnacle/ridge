@@ -19,7 +19,7 @@
   ],
   "require": {
     "php": ">=8.0",
-    "amphp/amp": "v2.5.*",
+    "amphp/amp": "^2.5",
     "amphp/socket": "v1.1.*",
     "phpinnacle/buffer": "v1.2.*"
   },
