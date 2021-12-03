@@ -71,10 +71,10 @@ final class Properties
 
     /**
      * @psalm-param array{
-     *     platform: string,
-     *     product: string,
-     *     version: string,
-     *     capabilities: array<string, bool>
+     *     platform: string|null,
+     *     product: string|null,
+     *     version: string|null,
+     *     capabilities: array<string, bool>|null
      * } $config
      */
     public static function create(array $config): self
