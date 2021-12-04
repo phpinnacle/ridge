@@ -54,7 +54,7 @@ final class Connection
     private $lastRead = 0;
 
     /**
-     * @var string
+     * @var string|null
      */
     private $heartbeatWatcherId;
 
@@ -168,35 +168,38 @@ final class Connection
     {
         $this->heartbeatWatcherId = Loop::repeat(
             $interval,
-            function ($watcherId) use ($interval, $connectionLost){
-            $currentTime = Loop::now();
+            function (string $watcherId) use ($interval, $connectionLost){
+                $currentTime = Loop::now();
 
-            if (null !== $this->socket) {
-                $lastWrite = $this->lastWrite ?: $currentTime;
+                if (null !== $this->socket) {
+                    $lastWrite = $this->lastWrite ?: $currentTime;
 
-                $nextHeartbeat = $lastWrite + $interval;
+                    $nextHeartbeat = $lastWrite + $interval;
 
-                if ($currentTime >= $nextHeartbeat) {
-                    yield $this->write((new Buffer)
-                        ->appendUint8(8)
-                        ->appendUint16(0)
-                        ->appendUint32(0)
-                        ->appendUint8(206)
-                    );
+                    if ($currentTime >= $nextHeartbeat) {
+                        yield $this->write((new Buffer)
+                            ->appendUint8(8)
+                            ->appendUint16(0)
+                            ->appendUint32(0)
+                            ->appendUint8(206)
+                        );
+                    }
+
+                    unset($lastWrite, $nextHeartbeat);
                 }
 
-                unset($lastWrite, $nextHeartbeat);
-            }
-
-            if (null !== $connectionLost && 0 !== $this->lastRead) {
-                if ($currentTime > ($this->lastRead + $interval + 1000)) {
+                if (
+                    null !== $connectionLost &&
+                    0 !== $this->lastRead &&
+                    $currentTime > ($this->lastRead + $interval + 1000)
+                )
+                {
                     $connectionLost();
                     Loop::cancel($watcherId);
                 }
-            }
 
-            unset($currentTime);
-        });
+                unset($currentTime);
+            });
     }
 
     public function close(): void
