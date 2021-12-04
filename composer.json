@@ -19,14 +19,14 @@
   ],
   "require": {
     "php": ">=8.0",
-    "amphp/amp": "v2.5.*",
+    "amphp/amp": "v2.6.*",
     "amphp/socket": "v1.1.*",
     "phpinnacle/buffer": "v1.2.*"
   },
   "require-dev": {
     "phpunit/phpunit": "v9.5.*",
-    "vimeo/psalm": "v4.3.*",
-    "phpstan/phpstan": "v0.12.*"
+    "vimeo/psalm": "v4.13.*",
+    "phpstan/phpstan": "v1.2.*"
   },
   "prefer-stable": true,
   "autoload": {
@@ -41,7 +41,7 @@
   },
   "scripts": {
     "psalm": "./vendor/bin/psalm --config=psalm.xml",
-    "phpstan": "./vendor/bin/phpstan analyse src --level 7",
+    "phpstan": "./vendor/bin/phpstan analyse src --level 9",
     "tests": "./vendor/bin/phpunit --configuration phpunit.xml --verbose",
     "coverage": "./vendor/bin/phpunit --configuration phpunit.xml --coverage-html ./coverage --verbose"
   },

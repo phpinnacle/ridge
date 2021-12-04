@@ -41,7 +41,7 @@ jobs:
         run: composer install -ov
 
       - name: Run phpstan/phpstan
-        run: ./vendor/bin/phpstan analyse src --level 7
+        run: ./vendor/bin/phpstan analyse src --level 9
 
   phpunit:
     name: PHPUnit

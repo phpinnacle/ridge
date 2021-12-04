@@ -137,12 +137,9 @@ final class Connection
                             $this->parser->append($chunk);
 
                             while ($frame = $this->parser->parse()) {
-                                /** @var AbstractFrame $frame */
-
                                 $class = \get_class($frame);
 
                                 /**
-                                 * @psalm-var int $i
                                  * @psalm-var callable(AbstractFrame):Promise<bool> $callback
                                  */
                                 foreach ($this->callbacks[(int)$frame->channel][$class] ?? [] as $i => $callback) {

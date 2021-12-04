@@ -1108,6 +1108,7 @@ final class Channel
         $buffer->appendUint8(206);
 
         if (!empty($body)) {
+            /* @phpstan-ignore-next-line */
             $chunks = \str_split($body, $this->properties->maxFrame());
 
             if ($chunks !== false) {
@@ -1126,23 +1127,20 @@ final class Channel
     }
 
     /**
-     * @template T
+     * @template T of Protocol\AbstractFrame
      * @psalm-param class-string<T> $frame
      * @psalm-return Promise<T>
-     *
-     * @return Promise<Protocol\AbstractFrame>
      */
     private function await(string $frame): Promise
     {
         /** @psalm-var Deferred<T> $deferred */
         $deferred = new Deferred;
 
-        /** @psalm-var class-string<Protocol\AbstractFrame> $frame */
-
         $this->connection->subscribe(
             $this->id,
             $frame,
             static function (Protocol\AbstractFrame $frame) use ($deferred) {
+                /** @psalm-var T $frame */
                 $deferred->resolve($frame);
 
                 return true;

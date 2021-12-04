@@ -1,13 +1,5 @@
 parameters:
-    checkGenericClassInNonGenericObjectType: false
-    checkMissingIterableValueType: false
-    ignoreErrors:
-        -
-            message: '#Unable to resolve the template type#'
-            path: %currentWorkingDirectory%/src
-        -
-            message: '#AbstractFrame given#'
-            path: %currentWorkingDirectory%/src/Channel.php
-        -
-            message: '#AbstractFrame given#'
-            path: %currentWorkingDirectory%/src/Client.php
+	checkMissingIterableValueType: false
+	checkGenericClassInNonGenericObjectType: false
+	ignoreErrors:
+		- '#Cannot cast mixed to int#'
