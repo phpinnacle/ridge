@@ -287,7 +287,7 @@ final class Client
                 $heartbeatInterval = $this->config->heartbeat;
 
                 if ($heartbeatInterval !== 0) {
-                    $heartbeatInterval = \min($heartbeatInterval, $tune->heartbeat);
+                    $heartbeatInterval = \min($heartbeatInterval, $tune->heartbeat * 1000);
                 }
 
                 $maxChannel = \min($this->config->maxChannel, $tune->channelMax);
@@ -302,7 +302,7 @@ final class Client
                     ->appendUint16(31)
                     ->appendInt16($maxChannel)
                     ->appendInt32($maxFrame)
-                    ->appendInt16($heartbeatInterval)
+                    ->appendInt16((int) ($heartbeatInterval / 1000))
                     ->appendUint8(206);
 
                 yield $this->connection->write($buffer);
