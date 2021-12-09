@@ -91,7 +91,7 @@ final class Client
 
                 $this->state = self::STATE_CONNECTING;
 
-                $this->connection = new Connection($this->config->uri());
+                $this->connection = new Connection($this->config->uri(), fn() => $this->state = self::STATE_NOT_CONNECTED);
 
                 yield $this->connection->open(
                     $this->config->timeout,
@@ -310,9 +310,7 @@ final class Client
                 $this->properties->tune($maxChannel, $maxFrame);
 
                 if ($heartbeatInterval > 0) {
-                    $this->connection->heartbeat($heartbeatInterval, function (){
-                        $this->state = self::STATE_NOT_CONNECTED;
-                    });
+                    $this->connection->heartbeat($heartbeatInterval);
                 }
             }
         );
