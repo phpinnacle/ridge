@@ -91,7 +91,7 @@ final class Client
 
                 $this->state = self::STATE_CONNECTING;
 
-                $this->connection = new Connection($this->config->uri());
+                $this->connection = new Connection($this->config->uri(), fn() => $this->state = self::STATE_NOT_CONNECTED);
 
                 yield $this->connection->open(
                     $this->config->timeout,
@@ -287,7 +287,7 @@ final class Client
                 $heartbeatInterval = $this->config->heartbeat;
 
                 if ($heartbeatInterval !== 0) {
-                    $heartbeatInterval = \min($heartbeatInterval, $tune->heartbeat);
+                    $heartbeatInterval = \min($heartbeatInterval, $tune->heartbeat * 1000);
                 }
 
                 $maxChannel = \min($this->config->maxChannel, $tune->channelMax);
@@ -302,7 +302,7 @@ final class Client
                     ->appendUint16(31)
                     ->appendInt16($maxChannel)
                     ->appendInt32($maxFrame)
-                    ->appendInt16($heartbeatInterval)
+                    ->appendInt16((int) ($heartbeatInterval / 1000))
                     ->appendUint8(206);
 
                 yield $this->connection->write($buffer);
@@ -310,9 +310,7 @@ final class Client
                 $this->properties->tune($maxChannel, $maxFrame);
 
                 if ($heartbeatInterval > 0) {
-                    $this->connection->heartbeat($heartbeatInterval, function (){
-                        $this->state = self::STATE_NOT_CONNECTED;
-                    });
+                    $this->connection->heartbeat($heartbeatInterval);
                 }
             }
         );
