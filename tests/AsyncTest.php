@@ -53,6 +53,8 @@ abstract class AsyncTest extends RidgeTest
 
                 $return = yield call([$this, $this->realTestName], ...$args);
 
+                yield $client->disconnect();
+
                 $info  = Loop::getInfo();
                 $count = $info['enabled_watchers']['referenced'];
 

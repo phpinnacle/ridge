@@ -28,7 +28,7 @@ Loop::run(function () {
     }
 
     yield $channel->consume(function (Message $message, Channel $channel) {
-        echo $message->content() . \PHP_EOL;
+        echo $message->content . \PHP_EOL;
 
         yield $channel->ack($message);
     }, 'basic_queue');

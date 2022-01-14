@@ -32,7 +32,7 @@ Loop::run(function () {
     echo '[*] Waiting for messages. To exit press CTRL+C', \PHP_EOL;
 
     $tag = yield $channel->consume(function (Message $message, Channel $channel) {
-        echo "[x] Received message: {$message->content()}.", \PHP_EOL;
+        echo "[x] Received message: {$message->content}.", \PHP_EOL;
 
         // Do some work - we generate password hashes with a high cost
         // sleep() gets interrupted by Ctrl+C so it's not very good for demos
@@ -43,12 +43,12 @@ Loop::run(function () {
             password_hash(random_bytes(255), PASSWORD_BCRYPT, ["cost" => 15]);
         }
 
-        echo "[x] Done ", $message->content(), \PHP_EOL;
+        echo "[x] Done ", $message->content, \PHP_EOL;
 
         try {
             yield $channel->ack($message);
 
-            echo "ACK SUCCESS:: {$message->content()}", \PHP_EOL;
+            echo "ACK SUCCESS:: {$message->content}", \PHP_EOL;
         } catch (\Throwable $error) {
 
             echo "ACK FAILED:: {$error->getMessage()}", \PHP_EOL;
