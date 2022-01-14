@@ -20,13 +20,13 @@
   "require": {
     "php": ">=8.0",
     "amphp/amp": "v2.6.*",
-    "amphp/socket": "v1.1.*",
+    "amphp/socket": "v1.2.*",
     "phpinnacle/buffer": "v1.2.*"
   },
   "require-dev": {
     "phpunit/phpunit": "v9.5.*",
-    "vimeo/psalm": "v4.13.*",
-    "phpstan/phpstan": "v1.2.*"
+    "vimeo/psalm": "v4.18.*",
+    "phpstan/phpstan": "v1.4.*"
   },
   "prefer-stable": true,
   "autoload": {
@@ -52,6 +52,9 @@
   },
   "config": {
     "sort-packages": true,
-    "optimize-autoloader": true
+    "optimize-autoloader": true,
+    "allow-plugins": {
+      "composer/package-versions-deprecated": false
+    }
   }
 }

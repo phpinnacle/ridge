@@ -136,6 +136,8 @@ final class Client
 
                         $this->connection->write($buffer);
                         $this->connection->close();
+
+                        $this->disableConnectionMonitor();
                     }
                 );
 
@@ -161,6 +163,8 @@ final class Client
      */
     public function disconnect(int $code = 0, string $reason = ''): Promise
     {
+        $this->disableConnectionMonitor();
+
         return call(
             function () use ($code, $reason) {
                 if (\in_array($this->state, [self::STATE_NOT_CONNECTED, self::STATE_DISCONNECTING])) {
@@ -445,5 +449,14 @@ final class Client
         );
 
         return $deferred->promise();
+    }
+
+    private function disableConnectionMonitor(): void {
+        if($this->connectionMonitorWatcherId !== null) {
+
+            Loop::cancel($this->connectionMonitorWatcherId);
+
+            $this->connectionMonitorWatcherId = null;
+        }
     }
 }
