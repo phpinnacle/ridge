@@ -255,7 +255,7 @@ final class Client
 
     public function isConnected(): bool
     {
-        return $this->state === self::STATE_CONNECTED;
+        return $this->state === self::STATE_CONNECTED && $this->connection->connected();
     }
 
     /**
