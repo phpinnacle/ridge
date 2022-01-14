@@ -26,6 +26,10 @@ final class ClientException extends RidgeException
         return new self('Client is not connected to server.');
     }
 
+    public static function disconnected(): self {
+        return new self('The client was unexpectedly disconnected from the server');
+    }
+
     public static function alreadyConnected(): self
     {
         return new self('Client is already connected/connecting.');

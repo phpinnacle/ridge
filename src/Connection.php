@@ -58,16 +58,15 @@ final class Connection
      */
     private $heartbeatWatcherId;
 
-    /**
-     * @var callable|null
-     */
-    private $connectionLost;
-
-    public function __construct(string $uri, ?callable $connectionLost = null)
+    public function __construct(string $uri)
     {
         $this->uri = $uri;
         $this->parser = new Parser;
-        $this->connectionLost = $connectionLost;
+    }
+
+    public function connected(): bool
+    {
+        return $this->socket !== null && $this->socket->isClosed() === false;
     }
 
     /**
@@ -195,12 +194,10 @@ final class Connection
                 }
 
                 if (
-                    null !== $this->connectionLost &&
                     0 !== $this->lastRead &&
                     $currentTime > ($this->lastRead + $interval + 1000)
                 )
                 {
-                    call_user_func($this->connectionLost);
                     Loop::cancel($watcherId);
                 }
 
@@ -216,10 +213,6 @@ final class Connection
             Loop::cancel($this->heartbeatWatcherId);
 
             $this->heartbeatWatcherId = null;
-        }
-
-        if ($this->connectionLost !== null) {
-            call_user_func($this->connectionLost);
         }
 
         if ($this->socket !== null) {

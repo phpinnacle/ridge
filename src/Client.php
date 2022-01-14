@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace PHPinnacle\Ridge;
 
+use Amp\Loop;
 use function Amp\asyncCall;
 use function Amp\call;
 use Amp\Deferred;
@@ -23,6 +24,8 @@ final class Client
     private const STATE_CONNECTING = 1;
     private const STATE_CONNECTED = 2;
     private const STATE_DISCONNECTING = 3;
+
+    private const CONNECTION_MONITOR_INTERVAL = 5000;
 
     /**
      * @var Config
@@ -53,6 +56,11 @@ final class Client
      * @var Properties
      */
     private $properties;
+
+    /**
+     * @var string|null
+     */
+    private $connectionMonitorWatcherId;
 
     public function __construct(Config $config)
     {
@@ -91,7 +99,7 @@ final class Client
 
                 $this->state = self::STATE_CONNECTING;
 
-                $this->connection = new Connection($this->config->uri(), fn() => $this->state = self::STATE_NOT_CONNECTED);
+                $this->connection = new Connection($this->config->uri());
 
                 yield $this->connection->open(
                     $this->config->timeout,
@@ -132,6 +140,16 @@ final class Client
                 );
 
                 $this->state = self::STATE_CONNECTED;
+
+                $this->connectionMonitorWatcherId =  Loop::repeat(
+                    self::CONNECTION_MONITOR_INTERVAL,
+                    function(): void
+                    {
+                        if($this->connection->connected() === false) {
+                            throw Exception\ClientException::disconnected();
+                        }
+                    }
+                );
             }
         );
     }
@@ -151,6 +169,12 @@ final class Client
 
                 if ($this->state !== self::STATE_CONNECTED) {
                     throw Exception\ClientException::notConnected();
+                }
+
+                if($this->connectionMonitorWatcherId !== null){
+                    Loop::cancel($this->connectionMonitorWatcherId);
+
+                    $this->connectionMonitorWatcherId = null;
                 }
 
                 $this->state = self::STATE_DISCONNECTING;
