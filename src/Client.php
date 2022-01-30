@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace PHPinnacle\Ridge;
 
 use Amp\Loop;
+use PHPinnacle\Ridge\Exception\ConnectionException;
 use function Amp\asyncCall;
 use function Amp\call;
 use Amp\Deferred;
@@ -148,6 +149,8 @@ final class Client
                     function(): void
                     {
                         if($this->connection->connected() === false) {
+                            $this->state = self::STATE_NOT_CONNECTED;
+
                             throw Exception\ClientException::disconnected();
                         }
                     }
@@ -167,37 +170,41 @@ final class Client
 
         return call(
             function () use ($code, $reason) {
-                if (\in_array($this->state, [self::STATE_NOT_CONNECTED, self::STATE_DISCONNECTING])) {
-                    return;
-                }
-
-                if ($this->state !== self::STATE_CONNECTED) {
-                    throw Exception\ClientException::notConnected();
-                }
-
-                if($this->connectionMonitorWatcherId !== null){
-                    Loop::cancel($this->connectionMonitorWatcherId);
-
-                    $this->connectionMonitorWatcherId = null;
-                }
-
-                $this->state = self::STATE_DISCONNECTING;
-
-                if ($code === 0) {
-                    $promises = [];
-
-                    foreach ($this->channels as $channel) {
-                        $promises[] = $channel->close($code, $reason);
+                try {
+                    if (\in_array($this->state, [self::STATE_NOT_CONNECTED, self::STATE_DISCONNECTING])) {
+                        return;
                     }
 
-                    yield $promises;
+                    if ($this->state !== self::STATE_CONNECTED) {
+                        throw Exception\ClientException::notConnected();
+                    }
+
+                    if($this->connectionMonitorWatcherId !== null){
+                        Loop::cancel($this->connectionMonitorWatcherId);
+
+                        $this->connectionMonitorWatcherId = null;
+                    }
+
+                    $this->state = self::STATE_DISCONNECTING;
+
+                    if ($code === 0) {
+                        $promises = [];
+
+                        foreach ($this->channels as $channel) {
+                            $promises[] = $channel->close($code, $reason);
+                        }
+
+                        yield $promises;
+                    }
+
+                    yield $this->connectionClose($code, $reason);
+
+                    $this->connection->close();
                 }
-
-                yield $this->connectionClose($code, $reason);
-
-                $this->connection->close();
-
-                $this->state = self::STATE_NOT_CONNECTED;
+                finally
+                {
+                    $this->state = self::STATE_NOT_CONNECTED;
+                }
             }
         );
     }
@@ -250,7 +257,13 @@ final class Client
                     });
 
                     return $channel;
-                } catch (\Throwable $error) {
+                }
+                catch(ConnectionException $exception) {
+                    $this->state = self::STATE_NOT_CONNECTED;
+
+                    throw $exception;
+                }
+                catch (\Throwable $error) {
                     throw Exception\ClientException::unexpectedResponse($error);
                 }
             }

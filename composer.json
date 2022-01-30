@@ -25,7 +25,7 @@
   },
   "require-dev": {
     "phpunit/phpunit": "v9.5.*",
-    "vimeo/psalm": "v4.18.*",
+    "vimeo/psalm": "v4.19.*",
     "phpstan/phpstan": "v1.4.*"
   },
   "prefer-stable": true,
