@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace PHPinnacle\Ridge;
 
+use PHPinnacle\Ridge\Exception\ChannelException;
 use PHPinnacle\Ridge\Exception\ProtocolException;
 use function Amp\call;
 use Amp\Deferred;
@@ -613,10 +614,16 @@ final class Channel
                     return null;
                 }
 
-                /** @var Protocol\QueueDeclareOkFrame $frame */
-                $frame = yield $this->await(Protocol\QueueDeclareOkFrame::class);
+                /** @var Protocol\ChannelCloseFrame|Protocol\QueueDeclareOkFrame $frame */
+                $frame = yield Promise\first([
+                    $this->await(Protocol\ChannelCloseFrame::class),
+                    $this->await(Protocol\QueueDeclareOkFrame::class)
+                ]);
 
-                return new Queue($frame->queue, $frame->messageCount, $frame->consumerCount);
+                if( $frame instanceof Protocol\QueueDeclareOkFrame ) {
+                    return new Queue($frame->queue, $frame->messageCount, $frame->consumerCount);
+                }
+                throw new ChannelException($frame->replyText, $frame->replyCode);
             }
         );
     }
