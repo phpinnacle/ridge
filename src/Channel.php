@@ -754,10 +754,16 @@ final class Channel
                     return 0;
                 }
 
-                /** @var Protocol\QueueDeleteOkFrame $frame */
-                $frame = yield $this->await(Protocol\QueueDeleteOkFrame::class);
+                /** @var Protocol\ChannelCloseFrame|Protocol\QueueDeleteOkFrame $frame */
+                $frame = yield Promise\first([
+                    $this->await(Protocol\ChannelCloseFrame::class),
+                    $this->await(Protocol\QueueDeleteOkFrame::class)
+                ]);
 
-                return $frame->messageCount;
+                if( $frame instanceof Protocol\QueueDeleteOkFrame ) {
+                    return $frame->messageCount;
+                }
+                throw new ChannelException($frame->replyText, $frame->replyCode);
             }
         );
     }
