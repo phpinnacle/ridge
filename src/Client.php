@@ -139,6 +139,12 @@ final class Client
                         $this->connection->close();
 
                         $this->disableConnectionMonitor();
+
+                        if ($this->state === self::STATE_CONNECTED) {
+                            $this->state = self::STATE_NOT_CONNECTED;
+
+                            throw Exception\ClientException::disconnected();
+                        }
                     }
                 );
 
