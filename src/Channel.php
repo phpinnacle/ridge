@@ -228,8 +228,16 @@ final class Channel
                 );
 
                 if ($noWait === false) {
-                    /** @var Protocol\BasicConsumeOkFrame $frame */
-                    $frame = yield $this->await(Protocol\BasicConsumeOkFrame::class);
+
+                    /** @var Protocol\BasicConsumeOkFrame|Protocol\ChannelCloseFrame $frame */
+                    $frame = yield Promise\first([
+                        $this->await(Protocol\BasicConsumeOkFrame::class),
+                        $this->await(Protocol\ChannelCloseFrame::class),
+                    ]);
+
+                    if( $frame instanceof Protocol\ChannelCloseFrame ) {
+                        throw new ChannelException($frame->replyText, $frame->replyCode);
+                    }
 
                     if ('' === $consumerTag) {
                         $consumerTag = $frame->consumerTag;
