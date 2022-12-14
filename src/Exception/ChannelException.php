@@ -24,6 +24,11 @@ final class ChannelException extends RidgeException
         return new self(\sprintf('Trying to close already closed channel #%d.', $id));
     }
 
+    public static function notOpen(int $id): self
+    {
+        return new self(\sprintf('Trying to write to a closed channel #%d.', $id));
+    }
+
     public static function notRegularFor(string $mode): self
     {
         return new self(\sprintf('Channel not in regular mode, cannot change to %s mode.', $mode));

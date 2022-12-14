@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace PHPinnacle\Ridge;
 
+use Evenement\EventEmitterTrait;
 use PHPinnacle\Ridge\Exception\ConnectionException;
 use function Amp\asyncCall, Amp\call, Amp\Socket\connect;
 use Amp\Socket\ConnectContext;
@@ -22,6 +23,10 @@ use PHPinnacle\Ridge\Protocol\AbstractFrame;
 
 final class Connection
 {
+    use EventEmitterTrait;
+
+    public const EVENT_CLOSE = 'close';
+
     /**
      * @var string
      */
@@ -36,6 +41,8 @@ final class Connection
      * @var Socket|null
      */
     private $socket;
+
+    private bool $socketClosedExpectedly = false;
 
     /**
      * @var callable[][][]
@@ -136,6 +143,7 @@ final class Connection
                 }
 
                 $this->socket = yield connect($this->uri, $context);
+                $this->socketClosedExpectedly = false;
                 $this->lastRead = Loop::now();
 
                 asyncCall(
@@ -162,6 +170,7 @@ final class Connection
                             }
                         }
 
+                        $this->emit(self::EVENT_CLOSE, $this->socketClosedExpectedly ? [] : [Exception\ConnectionException::lostConnection()]);
                         $this->socket = null;
                     }
                 );
@@ -216,6 +225,7 @@ final class Connection
         }
 
         if ($this->socket !== null) {
+            $this->socketClosedExpectedly = true;
             $this->socket->close();
         }
     }

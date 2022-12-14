@@ -30,4 +30,9 @@ final class ConnectionException extends RidgeException
     {
         return new self('Attempting to write to a closed socket');
     }
+
+    public static function lostConnection(): self
+    {
+        return new self('Socket was closed unexpectedly');
+    }
 }
