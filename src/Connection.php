@@ -178,11 +178,19 @@ final class Connection
         );
     }
 
-    public function heartbeat(int $interval): void
+    public function heartbeat(int $timeout): void
     {
+        /**
+         * Heartbeat interval should be timeout / 2 according to rabbitmq docs
+         * @link https://www.rabbitmq.com/heartbeats.html#heartbeats-timeout
+         *
+         * We run the callback even more often to avoid race conditions if the loop is a bit under pressure
+         * otherwise we could miss heartbeats in rare conditions
+         */
+        $interval = $timeout / 2;
         $this->heartbeatWatcherId = Loop::repeat(
-            $interval,
-            function (string $watcherId) use ($interval){
+            $interval / 3,
+            function (string $watcherId) use ($interval, $timeout){
                 $currentTime = Loop::now();
 
                 if (null !== $this->socket) {
@@ -204,7 +212,7 @@ final class Connection
 
                 if (
                     0 !== $this->lastRead &&
-                    $currentTime > ($this->lastRead + $interval + 1000)
+                    $currentTime > ($this->lastRead + $timeout + 1000)
                 )
                 {
                     Loop::cancel($watcherId);
