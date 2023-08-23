@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace PHPinnacle\Ridge;
 
+use Evenement\EventEmitterTrait;
 use PHPinnacle\Ridge\Exception\ProtocolException;
 use function Amp\call;
 use Amp\Deferred;
@@ -19,6 +20,10 @@ use Amp\Promise;
 
 final class Channel
 {
+    use EventEmitterTrait;
+
+    public const EVENT_CHANNEL_CLOSED = 'close';
+
     private const STATE_READY = 1;
     private const STATE_OPEN = 2;
     private const STATE_CLOSING = 3;
@@ -77,6 +82,8 @@ final class Channel
      */
     private $deliveryTag = 0;
 
+    private CommandWaitQueue $commandWaitQueue;
+
     public function __construct(int $id, Connection $connection, Properties $properties)
     {
         $this->id = $id;
@@ -85,6 +92,7 @@ final class Channel
         $this->receiver = new MessageReceiver($this, $connection);
         $this->consumer = new Consumer($this, $this->receiver);
         $this->events = new Events($this, $this->receiver);
+        $this->commandWaitQueue = new CommandWaitQueue();
     }
 
     public function id(): int
@@ -95,6 +103,16 @@ final class Channel
     public function events(): Events
     {
         return $this->events;
+    }
+
+    private function assertOpen(): void {
+        if ($this->state !== self::STATE_OPEN) {
+            throw Exception\ChannelException::notOpen($this->id);
+        }
+    }
+
+    public function isOpen(): bool {
+        return $this->state === self::STATE_OPEN;
     }
 
     /**
@@ -170,6 +188,7 @@ final class Channel
                 $this->connection->cancel($this->id);
 
                 $this->state = self::STATE_CLOSED;
+                $this->emit(self::EVENT_CHANNEL_CLOSED);
             }
         );
     }
@@ -181,6 +200,7 @@ final class Channel
     {
         return call(
             function () use ($prefetchSize, $prefetchCount, $global) {
+                $this->assertOpen();
                 yield $this->connection->write((new Buffer)
                     ->appendUint8(1)
                     ->appendUint16($this->id)
@@ -216,6 +236,7 @@ final class Channel
 
         return call(
             function () use ($callback, $queue, $consumerTag, $flags, $noWait, $arguments) {
+                $this->assertOpen();
                 yield $this->connection->method($this->id, (new Buffer)
                     ->appendUint16(60)
                     ->appendUint16(20)
@@ -249,6 +270,7 @@ final class Channel
     {
         return call(
             function () use ($consumerTag, $noWait) {
+                $this->assertOpen();
                 yield $this->connection->write((new Buffer)
                     ->appendUint8(1)
                     ->appendUint16($this->id)
@@ -278,6 +300,7 @@ final class Channel
     {
         return call(
             function () use ($message, $multiple) {
+                $this->assertOpen();
                 if ($message->deliveryTag === null) {
                     throw ProtocolException::unsupportedDeliveryTag();
                 }
@@ -305,6 +328,7 @@ final class Channel
     {
         return call(
             function () use ($message, $multiple, $requeue) {
+                $this->assertOpen();
                 if ($message->deliveryTag === null) {
                     throw ProtocolException::unsupportedDeliveryTag();
                 }
@@ -331,6 +355,7 @@ final class Channel
     public function reject(Message $message, bool $requeue = true): Promise
     {
         return call(function () use ($message, $requeue) {
+            $this->assertOpen();
             if ($message->deliveryTag === null) {
                 throw ProtocolException::unsupportedDeliveryTag();
             }
@@ -355,6 +380,7 @@ final class Channel
     {
         return call(
             function () use ($requeue) {
+                $this->assertOpen();
                 $this->connection->write((new Buffer)
                     ->appendUint8(1)
                     ->appendUint16($this->id)
@@ -379,6 +405,7 @@ final class Channel
 
         return call(
             function () use ($queue, $noAck, &$getting) {
+                $this->assertOpen();
                 if ($getting) {
                     throw Exception\ChannelException::getInProgress();
                 }
@@ -460,6 +487,7 @@ final class Channel
     ): Promise {
         return call(
             function () use ($body, $exchange, $routingKey, $headers, $mandatory, $immediate) {
+                $this->assertOpen();
                 yield $this->doPublish($body, $exchange, $routingKey, $headers, $mandatory, $immediate);
 
                 return $this->mode === self::MODE_CONFIRM ? ++$this->deliveryTag : null;
@@ -476,6 +504,7 @@ final class Channel
     {
         return call(
             function () {
+                $this->assertOpen();
                 if ($this->mode !== self::MODE_REGULAR) {
                     throw Exception\ChannelException::notRegularFor("transactional");
                 }
@@ -505,6 +534,7 @@ final class Channel
     {
         return call(
             function () {
+                $this->assertOpen();
                 if ($this->mode !== self::MODE_TRANSACTIONAL) {
                     throw Exception\ChannelException::notTransactional();
                 }
@@ -532,6 +562,7 @@ final class Channel
     {
         return call(
             function () {
+                $this->assertOpen();
                 if ($this->mode !== self::MODE_TRANSACTIONAL) {
                     throw Exception\ChannelException::notTransactional();
                 }
@@ -559,6 +590,7 @@ final class Channel
     {
         return call(
             function () use ($noWait) {
+                $this->assertOpen();
                 if ($this->mode !== self::MODE_REGULAR) {
                     throw Exception\ChannelException::notRegularFor("confirm");
                 }
@@ -600,6 +632,7 @@ final class Channel
 
         return call(
             function () use ($queue, $flags, $noWait, $arguments) {
+                $this->assertOpen();
                 yield $this->connection->method($this->id, (new Buffer)
                     ->appendUint16(50)
                     ->appendUint16(10)
@@ -613,7 +646,6 @@ final class Channel
                     return null;
                 }
 
-                /** @var Protocol\QueueDeclareOkFrame $frame */
                 $frame = yield $this->await(Protocol\QueueDeclareOkFrame::class);
 
                 return new Queue($frame->queue, $frame->messageCount, $frame->consumerCount);
@@ -634,6 +666,7 @@ final class Channel
     ): Promise {
         return call(
             function () use ($queue, $exchange, $routingKey, $noWait, $arguments) {
+                $this->assertOpen();
                 yield $this->connection->method($this->id, (new Buffer)
                     ->appendUint16(50)
                     ->appendUint16(20)
@@ -667,6 +700,7 @@ final class Channel
     ): Promise {
         return call(
             function () use ($queue, $exchange, $routingKey, $noWait, $arguments) {
+                $this->assertOpen();
                 yield $this->connection->method($this->id, (new Buffer)
                     ->appendUint16(50)
                     ->appendUint16(50)
@@ -693,6 +727,7 @@ final class Channel
     {
         return call(
             function () use ($queue, $noWait) {
+                $this->assertOpen();
                 yield $this->connection->write((new Buffer)
                     ->appendUint8(1)
                     ->appendUint16($this->id)
@@ -731,6 +766,7 @@ final class Channel
 
         return call(
             function () use ($queue, $flags, $noWait) {
+                $this->assertOpen();
                 yield $this->connection->write((new Buffer)
                     ->appendUint8(1)
                     ->appendUint16($this->id)
@@ -773,6 +809,7 @@ final class Channel
 
         return call(
             function () use ($exchange, $exchangeType, $flags, $noWait, $arguments) {
+                $this->assertOpen();
                 yield $this->connection->method($this->id, (new Buffer)
                     ->appendUint16(40)
                     ->appendUint16(10)
@@ -805,6 +842,7 @@ final class Channel
     ): Promise {
         return call(
             function () use ($destination, $source, $routingKey, $noWait, $arguments) {
+                $this->assertOpen();
                 yield $this->connection->method($this->id, (new Buffer)
                     ->appendUint16(40)
                     ->appendUint16(30)
@@ -838,6 +876,7 @@ final class Channel
     ): Promise {
         return call(
             function () use ($destination, $source, $routingKey, $noWait, $arguments) {
+                $this->assertOpen();
                 yield $this->connection->method($this->id, (new Buffer)
                     ->appendUint16(40)
                     ->appendUint16(40)
@@ -865,6 +904,7 @@ final class Channel
     {
         return call(
             function () use ($exchange, $unused, $noWait) {
+                $this->assertOpen();
                 yield $this->connection->write((new Buffer)
                     ->appendUint8(1)
                     ->appendUint16($this->id)
@@ -1135,6 +1175,7 @@ final class Channel
     {
         /** @psalm-var Deferred<T> $deferred */
         $deferred = new Deferred;
+        $this->commandWaitQueue->add($deferred);
 
         $this->connection->subscribe(
             $this->id,
@@ -1148,5 +1189,17 @@ final class Channel
         );
 
         return $deferred->promise();
+    }
+
+    /**
+     * Channel was closed by server
+     */
+    public function forceClose(\Throwable $exception): void
+    {
+        if ($this->state !== self::STATE_CLOSED) {
+            $this->state = self::STATE_CLOSED;
+            $this->commandWaitQueue->cancel($exception);
+            $this->emit(self::EVENT_CHANNEL_CLOSED, [$exception]);
+        }
     }
 }

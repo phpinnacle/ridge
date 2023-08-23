@@ -13,6 +13,9 @@ declare(strict_types=1);
 namespace PHPinnacle\Ridge;
 
 use Amp\Loop;
+use Amp\MultiReasonException;
+use Evenement\EventEmitterTrait;
+use PHPinnacle\Ridge\Exception\ChannelException;
 use PHPinnacle\Ridge\Exception\ConnectionException;
 use function Amp\asyncCall;
 use function Amp\call;
@@ -21,6 +24,10 @@ use Amp\Promise;
 
 final class Client
 {
+    use EventEmitterTrait;
+
+    public const EVENT_CLOSE = 'close';
+
     private const STATE_NOT_CONNECTED = 0;
     private const STATE_CONNECTING = 1;
     private const STATE_CONNECTED = 2;
@@ -63,9 +70,21 @@ final class Client
      */
     private $connectionMonitorWatcherId;
 
+    private CommandWaitQueue $commandWaitQueue;
+
     public function __construct(Config $config)
     {
         $this->config = $config;
+        $this->commandWaitQueue = new CommandWaitQueue();
+        $this->on(self::EVENT_CLOSE, function (\Throwable $exception = null) {
+            if ($exception !== null) {
+                foreach ($this->channels as $channel) {
+                    $channel->forceClose($exception);
+                }
+                $this->channels = [];
+                $this->commandWaitQueue->cancel($exception);
+            }
+        });
     }
 
     public static function create(string $dsn): self
@@ -101,6 +120,10 @@ final class Client
                 $this->state = self::STATE_CONNECTING;
 
                 $this->connection = new Connection($this->config->uri());
+                $this->connection->once(Connection::EVENT_CLOSE, function(\Throwable $exception = null) {
+                    $this->state = self::STATE_NOT_CONNECTED;
+                    $this->emit(self::EVENT_CLOSE, [$exception]);
+                });
 
                 yield $this->connection->open(
                     $this->config->timeout,
@@ -124,8 +147,8 @@ final class Client
 
                 asyncCall(
                     function () {
-                        yield $this->await(Protocol\ConnectionCloseFrame::class);
-
+                        /** @var Protocol\ConnectionCloseFrame $frame */
+                        $frame = yield $this->await(Protocol\ConnectionCloseFrame::class);
                         $buffer = new Buffer;
                         $buffer
                             ->appendUint8(1)
@@ -138,7 +161,11 @@ final class Client
                         $this->connection->write($buffer);
                         $this->connection->close();
 
+                        $exception = Exception\ClientException::connectionClosed($frame);
+
                         $this->disableConnectionMonitor();
+
+                        $this->emit(self::EVENT_CLOSE, [$exception]);
                     }
                 );
 
@@ -150,8 +177,7 @@ final class Client
                     {
                         if($this->connection->connected() === false) {
                             $this->state = self::STATE_NOT_CONNECTED;
-
-                            throw Exception\ClientException::disconnected();
+                            $this->emit(self::EVENT_CLOSE, [Exception\ClientException::disconnected()]);
                         }
                     }
                 );
@@ -194,7 +220,9 @@ final class Client
                             $promises[] = $channel->close($code, $reason);
                         }
 
-                        yield $promises;
+                        // Gracefully continue to close connection even if closing channels fails
+                        yield Promise\any($promises);
+                        $this->channels = [];
                     }
 
                     yield $this->connectionClose($code, $reason);
@@ -232,28 +260,36 @@ final class Client
                     yield $channel->qos($this->config->qosSize, $this->config->qosCount, $this->config->qosGlobal);
 
                     asyncCall(function () use ($id) {
-                        /** @var Protocol\ChannelCloseFrame|Protocol\ChannelCloseOkFrame $frame */
-                        $frame = yield Promise\first([
-                            $this->await(Protocol\ChannelCloseFrame::class, $id),
-                            $this->await(Protocol\ChannelCloseOkFrame::class, $id)
-                        ]);
+                        try {
+                            $frame = yield Promise\first([
+                                $this->await(Protocol\ChannelCloseFrame::class, $id),
+                                $this->await(Protocol\ChannelCloseOkFrame::class, $id)
+                            ]);
 
-                        $this->connection->cancel($id);
+                            $channel = $this->channels[$id];
+                            unset($this->channels[$id]);
 
-                        if ($frame instanceof Protocol\ChannelCloseFrame) {
-                            $buffer = new Buffer;
-                            $buffer
-                                ->appendUint8(1)
-                                ->appendUint16($id)
-                                ->appendUint32(4)
-                                ->appendUint16(20)
-                                ->appendUint16(41)
-                                ->appendUint8(206);
+                            if ($frame instanceof Protocol\ChannelCloseFrame) {
+                                $buffer = new Buffer;
+                                $buffer
+                                    ->appendUint8(1)
+                                    ->appendUint16($id)
+                                    ->appendUint32(4)
+                                    ->appendUint16(20)
+                                    ->appendUint16(41)
+                                    ->appendUint8(206);
 
-                            yield $this->connection->write($buffer);
+                                yield $this->connection->write($buffer);
+                                $channel->forceClose(new ChannelException("Channel closed: {$frame->replyText}"));
+                            }
+                        }
+                        catch (MultiReasonException $exception) {
+                            // There was an error when waiting for those frames
+                            // We should not unset the channel here because the client will clean them up
+                            // with the correct error when the connection close event triggers
                         }
 
-                        unset($this->channels[$id]);
+                        $this->connection->cancel($id);
                     });
 
                     return $channel;
@@ -325,10 +361,10 @@ final class Client
                 /** @var Protocol\ConnectionTuneFrame $tune */
                 $tune = yield $this->await(Protocol\ConnectionTuneFrame::class);
 
-                $heartbeatInterval = $this->config->heartbeat;
+                $heartbeatTimeout = $this->config->heartbeat;
 
-                if ($heartbeatInterval !== 0) {
-                    $heartbeatInterval = \min($heartbeatInterval, $tune->heartbeat * 1000);
+                if ($heartbeatTimeout !== 0) {
+                    $heartbeatTimeout = \min($heartbeatTimeout, $tune->heartbeat * 1000);
                 }
 
                 $maxChannel = \min($this->config->maxChannel, $tune->channelMax);
@@ -343,15 +379,15 @@ final class Client
                     ->appendUint16(31)
                     ->appendInt16($maxChannel)
                     ->appendInt32($maxFrame)
-                    ->appendInt16((int) ($heartbeatInterval / 1000))
+                    ->appendInt16((int) ($heartbeatTimeout / 1000))
                     ->appendUint8(206);
 
                 yield $this->connection->write($buffer);
 
                 $this->properties->tune($maxChannel, $maxFrame);
 
-                if ($heartbeatInterval > 0) {
-                    $this->connection->heartbeat($heartbeatInterval);
+                if ($heartbeatTimeout > 0) {
+                    $this->connection->heartbeat($heartbeatTimeout);
                 }
             }
         );
@@ -449,6 +485,7 @@ final class Client
     {
         /** @psalm-var Deferred<T> $deferred */
         $deferred = new Deferred;
+        $this->commandWaitQueue->add($deferred);
 
         $this->connection->subscribe(
             $channel,

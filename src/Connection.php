@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace PHPinnacle\Ridge;
 
+use Evenement\EventEmitterTrait;
 use PHPinnacle\Ridge\Exception\ConnectionException;
 use function Amp\asyncCall, Amp\call, Amp\Socket\connect;
 use Amp\Socket\ConnectContext;
@@ -22,6 +23,10 @@ use PHPinnacle\Ridge\Protocol\AbstractFrame;
 
 final class Connection
 {
+    use EventEmitterTrait;
+
+    public const EVENT_CLOSE = 'close';
+
     /**
      * @var string
      */
@@ -36,6 +41,8 @@ final class Connection
      * @var Socket|null
      */
     private $socket;
+
+    private bool $socketClosedExpectedly = false;
 
     /**
      * @var callable[][][]
@@ -136,6 +143,7 @@ final class Connection
                 }
 
                 $this->socket = yield connect($this->uri, $context);
+                $this->socketClosedExpectedly = false;
                 $this->lastRead = Loop::now();
 
                 asyncCall(
@@ -162,6 +170,7 @@ final class Connection
                             }
                         }
 
+                        $this->emit(self::EVENT_CLOSE, $this->socketClosedExpectedly ? [] : [Exception\ConnectionException::lostConnection()]);
                         $this->socket = null;
                     }
                 );
@@ -169,11 +178,19 @@ final class Connection
         );
     }
 
-    public function heartbeat(int $interval): void
+    public function heartbeat(int $timeout): void
     {
+        /**
+         * Heartbeat interval should be timeout / 2 according to rabbitmq docs
+         * @link https://www.rabbitmq.com/heartbeats.html#heartbeats-timeout
+         *
+         * We run the callback even more often to avoid race conditions if the loop is a bit under pressure
+         * otherwise we could miss heartbeats in rare conditions
+         */
+        $interval = $timeout / 2;
         $this->heartbeatWatcherId = Loop::repeat(
-            $interval,
-            function (string $watcherId) use ($interval){
+            $interval / 3,
+            function (string $watcherId) use ($interval, $timeout){
                 $currentTime = Loop::now();
 
                 if (null !== $this->socket) {
@@ -195,7 +212,7 @@ final class Connection
 
                 if (
                     0 !== $this->lastRead &&
-                    $currentTime > ($this->lastRead + $interval + 1000)
+                    $currentTime > ($this->lastRead + $timeout + 1000)
                 )
                 {
                     Loop::cancel($watcherId);
@@ -216,6 +233,7 @@ final class Connection
         }
 
         if ($this->socket !== null) {
+            $this->socketClosedExpectedly = true;
             $this->socket->close();
         }
     }
