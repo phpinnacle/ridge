@@ -149,6 +149,9 @@ final class Channel
     }
 
     /**
+     * @psalm-suppress InvalidReturnType
+     * @psalm-suppress InvalidReturnStatement
+     *
      * @return Promise<void>
      *
      * @throws \PHPinnacle\Ridge\Exception\ChannelException
@@ -1148,9 +1151,12 @@ final class Channel
         $buffer->appendUint8(206);
 
         if (!empty($body)) {
-            /* @phpstan-ignore-next-line */
+            /**
+             * @phpstan-ignore-next-line
+             * @psalm-suppress ArgumentTypeCoercion
+             */
             $chunks = \str_split($body, $this->properties->maxFrame());
-
+            /** @psalm-suppress RedundantConditionGivenDocblockType */
             if ($chunks !== false) {
                 foreach ($chunks as $chunk) {
                     $buffer
@@ -1197,6 +1203,8 @@ final class Channel
     public function forceClose(\Throwable $exception): void
     {
         if ($this->state !== self::STATE_CLOSED) {
+            $this->connection->cancel($this->id);
+
             $this->state = self::STATE_CLOSED;
             $this->commandWaitQueue->cancel($exception);
             $this->emit(self::EVENT_CHANNEL_CLOSED, [$exception]);

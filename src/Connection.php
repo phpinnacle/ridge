@@ -160,9 +160,12 @@ final class Connection
                                 $this->lastRead = Loop::now();
 
                                 /**
-                                 * @psalm-var callable(AbstractFrame):Promise<bool> $callback
+                                 * @psalm-suppress PossiblyInvalidArgument
+                                 *
+                                 * @var callable(AbstractFrame):Promise<bool> $callback
                                  */
                                 foreach ($this->callbacks[(int)$frame->channel][$class] ?? [] as $i => $callback) {
+                                    /** @phpstan-ignore-next-line */
                                     if (yield call($callback, $frame)) {
                                         unset($this->callbacks[(int)$frame->channel][$class][$i]);
                                     }
@@ -187,9 +190,9 @@ final class Connection
          * We run the callback even more often to avoid race conditions if the loop is a bit under pressure
          * otherwise we could miss heartbeats in rare conditions
          */
-        $interval = $timeout / 2;
+        $interval = (int) ($timeout / 2);
         $this->heartbeatWatcherId = Loop::repeat(
-            $interval / 3,
+            (int) ($interval / 3),
             function (string $watcherId) use ($interval, $timeout){
                 $currentTime = Loop::now();
 

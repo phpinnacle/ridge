@@ -13,27 +13,17 @@ namespace PHPinnacle\Ridge\Tests;
 use Amp\Loop;
 use function Amp\call;
 
-abstract class AsyncTest extends RidgeTest
+abstract class AsyncTestCase extends RidgeTestCase
 {
     /**
-     * @var string
+     * @var string|null
      */
     private $realTestName;
 
-    /**
-     * @codeCoverageIgnore Invoked before code coverage data is being collected.
-     *
-     * @param string $name
-     */
-    public function setName(string $name): void
+    protected function runTest(): mixed
     {
-        parent::setName($name);
+        $this->realTestName = $this->name();
 
-        $this->realTestName = $name;
-    }
-
-    protected function runTest()
-    {
         parent::setName('runTestAsync');
 
         return parent::runTest();
@@ -49,6 +39,7 @@ abstract class AsyncTest extends RidgeTest
 
                 yield $client->connect();
 
+                $args = $args ?: [];
                 \array_unshift($args, $client);
 
                 $return = yield call([$this, $this->realTestName], ...$args);

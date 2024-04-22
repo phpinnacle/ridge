@@ -15,7 +15,7 @@ use PHPinnacle\Ridge\Client;
 use PHPinnacle\Ridge\Config;
 use PHPUnit\Framework\TestCase;
 
-abstract class RidgeTest extends TestCase
+abstract class RidgeTestCase extends TestCase
 {
     /**
      * @param mixed $value

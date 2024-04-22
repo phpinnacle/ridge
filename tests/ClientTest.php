@@ -14,7 +14,7 @@ use PHPinnacle\Ridge\Channel;
 use PHPinnacle\Ridge\Client;
 use PHPinnacle\Ridge\Message;
 
-class ClientTest extends AsyncTest
+class ClientTest extends AsyncTestCase
 {
     public function testOpenChannel(Client $client)
     {

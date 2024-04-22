@@ -18,7 +18,7 @@ use PHPinnacle\Ridge\Exception;
 use PHPinnacle\Ridge\Message;
 use PHPinnacle\Ridge\Queue;
 
-class ChannelTest extends AsyncTest
+class ChannelTest extends AsyncTestCase
 {
     public function testOpenNotReadyChannel(Client $client)
     {
