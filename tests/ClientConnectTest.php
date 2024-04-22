@@ -16,7 +16,7 @@ use PHPinnacle\Ridge\Channel;
 use PHPinnacle\Ridge\Client;
 use PHPinnacle\Ridge\Message;
 
-class ClientConnectTest extends RidgeTest
+class ClientConnectTest extends RidgeTestCase
 {
     public function testConnect()
     {

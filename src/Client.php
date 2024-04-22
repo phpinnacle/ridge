@@ -83,6 +83,8 @@ final class Client
                 }
                 $this->channels = [];
                 $this->commandWaitQueue->cancel($exception);
+
+                throw $exception;
             }
         });
     }
@@ -186,6 +188,9 @@ final class Client
     }
 
     /**
+     * @psalm-suppress InvalidReturnType
+     * @psalm-suppress InvalidReturnStatement
+     *
      * @return Promise<void>
      *
      * @throws \PHPinnacle\Ridge\Exception\ClientException

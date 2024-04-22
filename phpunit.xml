@@ -1,25 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" bootstrap="vendor/autoload.php" backupGlobals="false"
-         backupStaticAttributes="false" beStrictAboutTestsThatDoNotTestAnything="false" colors="true" verbose="true"
-         convertErrorsToExceptions="true" convertNoticesToExceptions="true" convertWarningsToExceptions="true"
-         failOnRisky="true" failOnWarning="true" stopOnFailure="false"
-         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd">
-    <coverage>
-        <include>
-            <directory>./</directory>
-        </include>
-        <exclude>
-            <directory>./tests</directory>
-            <directory>./vendor</directory>
-        </exclude>
-    </coverage>
-    <php>
-        <ini name="error_reporting" value="-1"/>
-        <env name="RIDGE_TEST_DSN" value="amqp://guest:guest@127.0.0.1:5672/?heartbeat=0"/>
-    </php>
-    <testsuites>
-        <testsuite name="PHPinnacle Test Suite">
-            <directory>./tests/</directory>
-        </testsuite>
-    </testsuites>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         bootstrap="vendor/autoload.php"
+         backupGlobals="false"
+         beStrictAboutTestsThatDoNotTestAnything="false"
+         colors="true"
+         failOnRisky="true"
+         failOnWarning="true"
+         stopOnFailure="false"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd">
+  <php>
+    <ini name="error_reporting" value="-1"/>
+    <env name="RIDGE_TEST_DSN" value="amqp://guest:guest@127.0.0.1:5672/?heartbeat=0"/>
+  </php>
+  <testsuites>
+    <testsuite name="PHPinnacle Test Suite">
+      <directory>./tests/</directory>
+    </testsuite>
+  </testsuites>
+  <source>
+    <include>
+      <directory>./</directory>
+    </include>
+    <exclude>
+      <directory>./tests</directory>
+      <directory>./vendor</directory>
+    </exclude>
+  </source>
 </phpunit>

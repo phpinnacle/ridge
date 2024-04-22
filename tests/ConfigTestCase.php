@@ -12,7 +12,7 @@ namespace PHPinnacle\Ridge\Tests;
 
 use PHPinnacle\Ridge\Config;
 
-class ConfigTest extends RidgeTest
+class ConfigTestCase extends RidgeTestCase
 {
     public function testCreate()
     {
